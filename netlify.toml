@@ -4,3 +4,15 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Modèles 3D : dossier versionné → cache d'un an
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Textures facultatives : cache d'un jour
+[[headers]]
+  for = "/assets/textures/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
