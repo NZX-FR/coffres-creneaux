@@ -1,0 +1,133 @@
+# ⚔️ Coffres & Créneaux
+
+Construis ton château, remplis-le de monstres et de pièges… puis pars piller celui des autres !
+Un jeu d'action-donjon en 3D qui se joue directement dans le navigateur, sur ordinateur comme sur téléphone.
+
+> 🛠 Tu veux héberger le jeu toi-même ? Le guide d'installation est dans [DEPLOIEMENT.md](DEPLOIEMENT.md).
+
+---
+
+## 🚀 Bien démarrer
+
+1. Ouvre le jeu et **crée ton héros** : tu commences en **Recrue**, qui peut porter tout l'équipement.
+2. Va dans **Pillage** et attaque le premier château. Vide chaque salle, la porte s'ouvre, et le **coffre** t'attend au bout avec son boss.
+3. Équipe ce que tu ramènes dans **Héros & butin**, puis attaque le château suivant (ils se débloquent un par un).
+4. En gagnant des niveaux de **joueur**, de nouveaux onglets s'ouvrent :
+
+| Niveau de joueur | Onglet débloqué |
+|---|---|
+| 1 | Pillage · Héros & butin · 🌐 En ligne |
+| 2 | Mon château · Journal |
+| 3 | Marché · Apparence |
+| 4 | Alchimie |
+| 5 | Matchmaking (les îles des 60 IA) |
+
+Ton **niveau de joueur** monte avec la puissance de tous tes héros, tes pillages réussis, tes victoires en matchmaking et les défenses réussies de ton château.
+
+---
+
+## 🎮 Commandes
+
+| Action | Clavier (par défaut) | Téléphone |
+|---|---|---|
+| Se déplacer | `Z Q S D` / `W A S D` ou flèches | Joystick à gauche |
+| Attaquer | Automatique sur le monstre ciblé (clic sur un monstre pour le viser) | Automatique |
+| Compétence 1 | `1` | Bouton à l'écran |
+| Compétence 2 (ruée, charge, téléportation…) | `2` ou `Espace` | Bouton à l'écran |
+| Potion | `3` | Bouton à l'écran |
+| Compétence 3 / Ultime (sous-classes) | `R` / `F` | Boutons à l'écran |
+| Potions de mélange | `4` `5` `6` | Boutons à l'écran |
+| Tourner la caméra | `A` / `E` (`Q` / `E` en QWERTY) | Glisser |
+
+Toutes les touches (et les boutons de la souris) se changent dans **⚙ Réglages → Touches**. Tu peux aussi passer en **vue à la première personne** depuis le raid.
+
+---
+
+## 🧙 Les héros
+
+Chaque héros a **son propre niveau, ses talents, son équipement et son sac**. L'or, le château et les potions sont partagés.
+
+| Héros | Prix | Style |
+|---|---|---|
+| **Recrue** | gratuit | Porte tout l'équipement (stats à 75 %), ses compétences suivent l'arme tenue. Jamais blessée. |
+| **Chevalier** 🛡 | 1 200 or | Solide, tourbillon et charge du bouclier. |
+| **Mage** ✨ | 1 200 or | Attaque à distance, gros dégâts de zone, mais fragile. |
+| **Assassin** 🗡 | 2 500 or | Rapide, critiques, poison et Pas de l'ombre à 3 charges. |
+
+Un héros qui tombe au combat est **blessé 10 minutes** : joue un autre héros en attendant (la Recrue est toujours disponible).
+
+### Sous-classes
+
+Elles changent les compétences, ajoutent une **3e compétence** (`R`) et un **ultime** (`F`). Chacune a sa propre **maîtrise** (50 niveaux) et ses propres talents.
+
+- **Chevalier** : ⚖️ Justicier (niv. 8) · 🪓 Bourreau (niv. 12)
+- **Assassin** : 🌑 Ombrelame (niv. 8) · ☠️ Venimancien (niv. 12)
+- **Mage** : formes de Nova 🌀 Aura (niv. 5) · ❄️ Glace (niv. 7) · ☄️ Méga-boule (niv. 9) · 💀 Nécromancie (niv. 12)
+
+Chaque formation coûte 2 000 or. Au **niveau 50 de maîtrise**, tu peux passer **Prestige** (10 rangs) : la maîtrise repart au niveau 1, mais tu gagnes **+4 % de dégâts et +2 % de PV pour toujours** et des **skins exclusifs** (sceau d'azur, auréole, flammes rubis, ailes du néant, forme céleste).
+
+---
+
+## 🎒 Le butin
+
+Raretés, de la plus courante à la plus rare :
+**Commun · Rare · Épique · Légendaire · ⬜ Unique (pièces d'ensemble) · 🟪 Mythique**
+
+- **Améliore** tes objets jusqu'à **+15** : de l'or, puis des 🔷 fragments runiques (+6 à +10) et des 🌟 cœurs légendaires (+11 à +15). Les fragments runiques ne tombent qu'à partir du **niveau de joueur 15**.
+- **Ensembles** (6 au total, bouton 🧩 Ensembles) : 2 pièces = petit bonus, 4 pièces = pouvoir unique (double de toi, renaissance du phénix…). Les bonus doivent être **confectionnés chez l'Artisan légendaire** contre de l'or et des 💠 runes uniques.
+- **Mythiques** : rassemble 5 fragments d'un objet (très rares, surtout sur les boss) et fais-le forger par l'Artisan légendaire (5 à 30 minutes, même jeu fermé).
+- Le **vol de vie** a des rendements décroissants : la 2e pièce compte à 70 %, la 3e à 50 %…
+- Tout ton stock (runes, graines, herbes, potions) est récapitulé dans **Héros & butin → 📦 Réserves**.
+
+---
+
+## 🏰 Ton château
+
+Dans **Mon château** :
+
+- **Caserne** : recrute des monstres (il faut les avoir rencontrés dans le **Bestiaire**) et monte leur niveau.
+- **Boss** : choisis le gardien du coffre et ses compétences.
+- **⚙️ Atelier des pièges** : chaque piège a **deux voies d'amélioration** (3 niveaux). Exemple : le canon tire une **salve** de boulets *ou* des **boulets enflammés**.
+- **Création de salles** : place monstres et pièges en 3D, choisis l'agencement, ou **🧹 vide une salle** d'un coup (tout est remboursé).
+
+Pièges disponibles : 🔺 Piques · 💥 Canon mural · 🔥 Brasier · ⚙️ Scie rotative · 🕸️ Toile gluante (ralentit) · 🍄 Champignon toxique (poison) · 🌋 Lance-flammes · 🌀 Plaque à ressort (projette en arrière).
+
+N'oublie pas de **tester ton château** : il doit être validé (tu dois pouvoir le terminer toi-même) pour être ouvert aux pillards.
+
+---
+
+## 🌐 Jouer en ligne
+
+Dans l'onglet **🌐 En ligne** :
+
+1. **Crée ton compte** avec un pseudo et un **code secret de 4 à 8 chiffres**. Note-le bien : il n'y a pas de récupération en cas d'oubli. Il te permet aussi de te reconnecter sur un autre appareil.
+2. **Publie ton château** (il doit être validé). Après chaque modification, pense à cliquer sur **Mettre à jour mon château en ligne**.
+3. **Pille les châteaux de vrais joueurs**, choisis parmi ceux qui ont un nombre de 🏆 trophées proche du tien. Tu affrontes exactement les monstres et pièges qu'ils ont placés.
+
+| Résultat | Toi | Le défenseur |
+|---|---|---|
+| Tu pilles le coffre | **+ trophées** | − trophées |
+| Tu échoues | − trophées | **+ trophées et de l'or** à sa prochaine connexion |
+
+Le **classement** affiche les 50 meilleurs joueurs. Les attaques subies pendant ton absence s'affichent à ta connexion.
+
+> 🤝 Fair-play : le jeu fait confiance à ton navigateur pour annoncer le résultat d'un raid. Joue loyalement, c'est plus drôle pour tout le monde !
+
+---
+
+## 🌱 Et aussi…
+
+- **Marché** : entre dans les échoppes (forgeron, armurier, herboriste, ménagerie, brocanteur, enchanteur, artisan légendaire), parle aux marchands, accomplis leurs quêtes de réputation.
+- **Alchimie** : plante des graines (10 min à 10 h de pousse, même jeu fermé), récolte des herbes, améliore tes potions jusqu'au niveau 20 et invente des **potions de mélange** au Chaudron. Un nouveau bac tous les 4 niveaux de joueur.
+- **Compagnons** (Ménagerie) : petit dragon, hamster aspirateur à or, manchot des glaces…
+- **🎟 Passe de combat** : des saisons avec des paliers de récompenses.
+- **Matchmaking** : affronte 60 IA de plus en plus fortes (Apprenti → Légende).
+- **⚙ Réglages** : son, musique et préréglages graphiques (pense au mode **Bas** sur un vieux téléphone).
+
+---
+
+## 💾 Sauvegarde
+
+Ta partie est enregistrée automatiquement **dans ton navigateur** (3 emplacements de sauvegarde). Effacer les données du site efface la partie : utilise le bouton 💾 pour **exporter** ta sauvegarde et la réimporter ailleurs. Ton compte en ligne, lui, est sur le serveur.
+
+Bon pillage ! 🗝️
