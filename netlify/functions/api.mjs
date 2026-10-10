@@ -75,7 +75,7 @@ function cleanHero(h) {
 }
 
 // ---------- routes ----------
-export async function handle(req, store) {
+export async function handle(req, store, env = {}) {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/(\.netlify\/functions\/api|api)/, '') || '/';
   const method = req.method.toUpperCase();
@@ -127,6 +127,39 @@ export async function handle(req, store) {
     if (!me) return err('Session expirée : reconnecte-toi', 401);
 
     if (path === '/me') return json({ me: pubPlayer(me) });
+
+    // ----- synchronisation groupée : profil + attaques subies (or encaissé) + raids + classement, en UNE requête -----
+    if (path === '/sync') {
+      const wantTop = url.searchParams.get('top') !== '0';
+      const [ib0, hist0, ix] = await Promise.all([store.get('inbox/' + me.id, { type: 'json' }), store.get('hist/' + me.id, { type: 'json' }), wantTop ? readIndex(store) : null]);
+      const ib = ib0 || { events: [] }, hist = hist0 || { raids: [] };
+      let gold = 0; const fresh = [];
+      for (const e of ib.events) if (!e.claimed) { e.claimed = 1; gold += e.gold || 0; fresh.push(e); }
+      if (fresh.length) await store.setJSON('inbox/' + me.id, ib);
+      const top = ix ? Object.values(ix.data.players).sort((a, b) => b.trophies - a.trophies).slice(0, 50) : undefined;
+      const body = { me: pubPlayer(me), events: ib.events, raids: hist.raids, claimed: { gold, n: fresh.length, lost: fresh.filter((e) => e.success).length }, top, save: me.saveMeta || null };
+      return json(body);
+    }
+
+    // ----- sauvegarde de la partie dans le cloud (compressée par le jeu) -----
+    if (path === '/save' && method === 'POST') {
+      const data = String(body.data || '');
+      if (!data || data.length > 800000) return err('Sauvegarde vide ou trop grosse');
+      if (!/^[A-Za-z0-9+/=]+$/.test(data)) return err('Sauvegarde invalide');
+      const meta = { t: Date.now(), lvl: clamp(body.lvl | 0, 0, 999), cls: KEY_RE.test(body.cls || '') ? body.cls : '', pl: clamp(body.pl | 0, 0, 999), size: data.length };
+      await store.setJSON('save/' + me.id, { ...meta, data });
+      me.saveMeta = meta; await store.setJSON('player/' + me.id, me);
+      return json({ ok: true, save: meta });
+    }
+    if (path === '/save' && method === 'GET') {
+      const sv = await store.get('save/' + me.id, { type: 'json' });
+      return json({ save: sv || null });
+    }
+
+    if (path === '/dev') {
+      const admins = String(env.ADMIN_IDS || '').split(/[\s,;]+/).filter(Boolean);
+      return json({ dev: admins.includes(me.id), id: me.id });
+    }
 
     if (path === '/publish' && method === 'POST') {
       const castle = cleanCastle(body.castle);
@@ -205,7 +238,8 @@ export async function handle(req, store) {
 // ---------- point d'entrée Netlify ----------
 export default async (req) => {
   const { getStore } = await import('@netlify/blobs');
-  return handle(req, getStore({ name: 'coffres-creneaux', consistency: 'strong' }));
+  const env = { ADMIN_IDS: (globalThis.Netlify && Netlify.env && Netlify.env.get('ADMIN_IDS')) || process.env.ADMIN_IDS || '' };
+  return handle(req, getStore({ name: 'coffres-creneaux', consistency: 'strong' }), env);
 };
 
 export const config = { path: '/api/*' };
