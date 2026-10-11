@@ -1,5 +1,11 @@
 # 📜 Coffres & Créneaux : notes de mise à jour
 
+# Version 110 : Compagnon libre et niveaux requis
+- 🤝 **Compagnon** : celui que tu choisis avant le raid se déplace **librement**. Il choisit ses cibles et se promène autour de toi, mais reste toujours à proximité (il revient si tu t'éloignes).
+- 🎒 **Niveau requis** : un objet ne peut être équipé que si ton héros a au moins son niveau. Tu peux toujours l'envoyer à un autre héros (la Recrue par exemple), qui l'équipera une fois au bon niveau. Un objet porté sans le niveau requis est retiré automatiquement.
+- 🛒 Le marché et les récompenses de saison donnent maintenant des objets de ton niveau (plus de niveau +2 inutilisable).
+- 🚧 **Uniques et ensembles en refonte** : les objets uniques ne sont plus équipables et la confection des ensembles est fermée. Garde tes pièces, elles serviront plus tard !
+
 # Version 109 : Entraînement et fusion
 - 🎯 **Salle d'entraînement** (Héros & butin) : 4 mannequins invincibles pour tester tes builds, avec DPS sur 5 s, DPS moyen, plus gros coup et dégâts totaux. Le dernier mannequin reste à 30 % de PV pour tester les exécutions. **Aucune pénalité** : pas de blessure, potions rendues, entrée et sortie libres.
 - 🔗 **Fusion d'affixe** (Antre de l'enchanteur) : sacrifie un objet du même type et de même qualité qui partage une propriété (ex. deux bâtons avec Coups mortels) : 75 % de sa valeur rejoint l'objet receveur. Coûte des 🔷 fragments runiques et de l'or, et occupe un des 3 emplacements d'enchantement.
