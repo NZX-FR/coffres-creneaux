@@ -8,10 +8,10 @@
 <script>/* Chargement des modèles 3D et des compléments three.js depuis des fichiers à part :
    1) jsDelivr (copie gratuite de ton dépôt GitHub public) — n'utilise pas la bande passante de l'hébergeur
    2) en secours : le dossier assets/ du site lui-même */
-(function(){var V='dd50a229',KEYS=["barbarian", "knight", "mage", "rogue", "sk_mage", "sk_minion", "sk_warrior", "w_Skeleton_Blade", "w_Skeleton_Shield_Small_A", "w_Skeleton_Staff"],CDN='https://cdn.jsdelivr.net/gh/NZX-FR/coffres-creneaux@main/',BASES=[CDN+'assets/'+V+'/','assets/'+V+'/'];
+(function(){var V='dd50a229',KEYS=["barbarian", "knight", "mage", "rogue", "sk_mage", "sk_minion", "sk_warrior", "w_Skeleton_Blade", "w_Skeleton_Shield_Small_A", "w_Skeleton_Staff"],CDN='https://cdn.jsdelivr.net/gh/NZX-FR/coffres-creneaux@main/',BASES=[CDN+'assets/'+V+'/',CDN,'assets/'+V+'/',''];
 window.CC_ASSET_SRC='';window.CC_CDN=CDN;
 function get(p,i){i=i||0;if(i>=BASES.length)return Promise.reject(new Error('introuvable : '+p));
-  return fetch(BASES[i]+p,{cache:'force-cache'}).then(function(r){if(!r.ok)throw new Error(r.status);window.CC_ASSET_SRC=window.CC_ASSET_SRC||BASES[i];return r.arrayBuffer()}).catch(function(){return get(p,i+1)})}
+  return fetch(BASES[i]+(BASES[i].indexOf('assets/')<0?p.replace('models/',''):p),{cache:'force-cache'}).then(function(r){if(!r.ok)throw new Error(r.status);window.CC_ASSET_SRC=window.CC_ASSET_SRC||BASES[i];return r.arrayBuffer()}).catch(function(){return get(p,i+1)})}
 get('three-addons.js').then(function(b){var s=document.createElement('script');s.text=new TextDecoder().decode(b);document.head.appendChild(s);
   return Promise.all(KEYS.map(function(k){return get('models/'+k+'.bin').then(function(b){return [k,new Uint8Array(b)]})}))})
  .then(function(l){var o={};l.forEach(function(x){o[x[0]]=x[1]});window.KK_BIN=o;window.dispatchEvent(new Event('kk-models'))})
@@ -1021,7 +1021,16 @@ function mastBonus(){const k=subKey();if(!k)return {dmg:0,hp:0,lv:0,pr:0};const 
 function addXp(x){S.hero.xp+=x;let up=0;while(S.hero.xp>=xpNeed(S.hero.lvl)){S.hero.xp-=xpNeed(S.hero.lvl);S.hero.lvl++;up++}
   const k=subKey();if(k){const o=subLvO(k),cap=mastCap();o.xp+=x;while(o.lvl<cap&&o.xp>=mNeed(o.lvl)){o.xp-=mNeed(o.lvl);o.lvl++;o.best=Math.max(o.best||0,o.lvl)}if(o.lvl>=cap)o.xp=Math.min(o.xp,mNeed(o.lvl)-1)}return up}
 function findItem(id){for(const s of SLOTS){const it=S.hero.equip[s];if(it&&it.id===id)return {it,where:'equip'}}const it=S.hero.bag.find(i=>i.id===id);return it?{it,where:'bag'}:null}
-const BAG_MAX=30;
+const BAG_BASE=30,BAG_CAP=100,BAG_STEP=10;
+const bagMax=()=>Math.min(BAG_CAP,BAG_BASE+BAG_STEP*((S&&S.bags)||0));
+const bagCost=()=>Math.round(1000*Math.pow(1.75,(S&&S.bags)||0));
+const ASELL_K=[['0','Commun'],['1','Rare'],['2','Épique'],['3','Légendaire'],['4','Mythique'],['u','Unique']];
+const asellKey=it=>it.r==='unique'?'u':String(it.ri);
+function bagAdd(it,acc){S.asell=S.asell||{};const k=asellKey(it);if(S.asell[k]){const v=sellVal(it);S.hero.gold+=v;cnt('sold',1);cnt('soldGold',v);if(acc){acc.n++;acc.g+=v}return 'sold'}
+  if(S.hero.bag.length<bagMax()){S.hero.bag.push(it);return 'bag'}const v=sellVal(it);S.hero.gold+=v;if(acc){acc.f++;acc.fg+=v}return 'full'}
+function bagTools(){S.asell=S.asell||{};const n=S.bags||0,full=bagMax()>=BAG_CAP,c=bagCost();
+  return `<div class="bagtools"><div class="bar" style="margin:4px 0 6px;gap:6px;flex-wrap:wrap">${full?`<span class="chip">👜 Sac au maximum (${BAG_CAP} places)</span>`:`<button class="btn sm" data-act="buyBag" ${S.hero.gold<c?'disabled':''}>👜 Acheter un sac : +${BAG_STEP} places (${fmt(c)} or)</button><small class="sub" style="margin:0">${bagMax()} / ${BAG_CAP} places · partagé par tous tes héros</small>`}</div>
+  <div class="bar" style="margin:0 0 8px;gap:4px;flex-wrap:wrap"><small class="sub" style="margin:0 4px 0 0">Vente automatique au ramassage :</small>${ASELL_K.map(([k,l])=>`<button class="btn sm ${S.asell[k]?'primary':''}" data-act="asell" data-k="${k}" title="${S.asell[k]?'Activé : vendu dès le butin':'Désactivé : gardé dans le sac'}">${S.asell[k]?'✓ ':''}${l}</button>`).join('')}</div></div>`}
 function cnt(k,n=1){bpOnCnt(k,n);S.cnt=S.cnt||{};S.cnt[k]=(S.cnt[k]||0)+n}
 const cntv=k=>k in (S.stats||{})?S.stats[k]:((S.cnt||{})[k]||0);
 /* ===== Personnages : un inventaire, un niveau et des talents par héros ===== */
@@ -1054,16 +1063,16 @@ function migrateItem(it,cls){if(!it||it.cls||it.slot==='anneau')return;const lis
 
 /* ================= Château du joueur ================= */
 const roomCount=(l=S.my.lvl)=>Math.min(5,2+Math.ceil(l/2));
-const capacity=()=>8+2*S.my.lvl;
+const capacity=()=>10+5*S.my.lvl;
 const upCost=()=>Math.round(150*Math.pow(S.my.lvl,1.6));
-const capT=()=>4+Math.ceil(S.my.lvl*.8);
+const capT=()=>6+Math.ceil(S.my.lvl*5.4);
 function monUsed(i){const r=S.my.rooms[i];let u=0;for(const k in r.mobs)u+=(r.mobs[k]||0)*CREA[k].pts;return Math.round(u*100)/100}
 const fmtPl=x=>(Math.round(x*100)/100).toLocaleString('fr-FR');
 const mobCount=i=>Object.values(S.my.rooms[i].mobs).reduce((a,b)=>a+(b||0),0);
-const MAX_MOBS=40,MAX_POULES=25;
+const MAX_MOBS=60,MAX_POULES=60,MAX_TRAPS=60;
 function trapUsed(i){const r=S.my.rooms[i];let u=0;for(const k in r.traps)u+=r.traps[k]*TRAPS[k].pts;return u}
 function roomUsed(i){const r=S.my.rooms[i];let u=0;for(const k in r.mobs)u+=r.mobs[k]*CREA[k].pts;for(const k in r.traps)u+=r.traps[k]*TRAPS[k].pts;return u}
-const trapCount=i=>{const t=S.my.rooms[i].traps;return t.piques+t.canon+t.brasier};
+const trapCount=i=>Object.values(S.my.rooms[i].traps).reduce((a,b)=>a+(b||0),0);
 const mLv=k=>clamp(S.my.mlv&&S.my.mlv[k]||1,1,20);
 const mLvMax=()=>Math.min(20,2*S.my.lvl);
 const mUpCost=k=>Math.round((CREA[k]?CREA[k].price:120)*3*Math.pow(1.32,mLv(k)-1)*(1-.1*huntRank(k)));
@@ -1084,7 +1093,7 @@ function simulateDefense(){
   else{g=-Math.min(Math.round(S.hero.gold*.08*T.gold),Math.round((40+15*aLvl)*T.gold));S.hero.gold+=g;text=`${who} a traversé tes ${n} salles et pillé ton coffre.`;
     if(Math.random()<T.steal&&S.hero.bag.length){const it=S.hero.bag.splice(randi(0,S.hero.bag.length-1),1)[0];extra+=` Il est reparti avec ${it.name}.`}}
   let item=null;
-  if(Math.random()<Math.min(.65,.1+.55*frac)){const it=genItem(aLvl,.4);item=it.name;if(S.hero.bag.length<BAG_MAX)S.hero.bag.push(it);else{S.hero.gold+=it.value;extra+=` Sac plein : ${it.name} revendu ${it.value} or.`}extra+=` Butin récupéré : ${it.name}.`}
+  if(Math.random()<Math.min(.65,.1+.55*frac)){const it=genItem(aLvl,.4);item=it.name;{const w=bagAdd(it);if(w==='sold')extra+=` ${it.name} vendu automatiquement.`;else if(w==='full')extra+=` Sac plein : ${it.name} revendu.`}extra+=` Butin récupéré : ${it.name}.`}
   return {win,gold:g,xp,rooms:done,total:n,item,text:`${text}${extra} +${xp} xp${ups?' · niveau supérieur !':''}.`};
 }
 const scheduleRaid=()=>{S.nextRaid=NOW()+randi(90,240)*1000};
@@ -1121,7 +1130,7 @@ const RI_NAME=['commun','rare','épique','légendaire','mythique'];
 function bpLabel(w){return w.k==='gold'?`🪙 ${fmt(w.n)} or`:w.k==='seed'?`🌱 ${w.n} graine${w.n>1?'s':''} niv.${w.l}`:w.k==='herb'?`🌿 ${w.n} herbes niv.${w.l}`:`🎁 Objet ${RI_NAME[w.ri]}`}
 function bpGrant(w){if(w.k==='gold'){S.hero.gold+=w.n;return bpLabel(w)}if(w.k==='seed'){S.seeds[w.l]=(S.seeds[w.l]||0)+w.n;return bpLabel(w)}if(w.k==='herb'){S.hl[w.l]=(S.hl[w.l]||0)+w.n;return bpLabel(w)}
   RI_FLOOR=w.ri;let it;try{it=genItem(Math.max(1,S.hero.lvl),.3,undefined,S.hero.cls==='recrue'?undefined:S.hero.cls)}finally{RI_FLOOR=0}
-  if(S.hero.bag.length>=BAG_MAX){S.hero.gold+=it.value;return `${it.name} (sac plein : vendu ${it.value} or)`}S.hero.bag.push(it);return it.name}
+  {const w=bagAdd(it);if(w==='sold')return `${it.name} (vendu automatiquement)`;if(w==='full')return `${it.name} (sac plein : vendu)`}return it.name}
 function bpClaim(tr,track){const bp=bpSync(),C=bpGen(bp.season),reached=bpTier();if(tr>reached)return null;
   if(track==='f'){if(!C.free[tr]||bp.f[tr])return null;bp.f[tr]=1;return bpGrant(C.free[tr])}
   if(!bp.prem||bp.p[tr])return null;bp.p[tr]=1;return bpGrant(C.prem[tr-1])}
@@ -1717,7 +1726,7 @@ const W_EPOCH=Date.UTC(2026,9,10),worldSeason=()=>{const i=Math.max(0,Math.floor
 function seasonTick(){if(!CLK.sync&&performance.now()<8000)return;const now=NOW();if(!S.season||!S.seasonV2){S.season=worldSeason();S.seasonV2=1;save();return}
   if(now<S.season.end)return;
   const L=rankList(),rk=L.findIndex(x=>x.me)+1,top=L.slice(0,3).map(x=>x.me?{me:1,name:S.hero.name||'Toi',r:x.r}:{i:x.b.i,name:x.b.name,r:x.r});
-  let rw=null;if(rk<=3){const R=SEASON_RW[rk-1],gold=R.g(S.hero.lvl),it=seasonItem(R.ri);S.hero.gold+=gold;let sold=0;if(S.hero.bag.length<BAG_MAX)S.hero.bag.push(it);else{sold=it.value;S.hero.gold+=sold}
+  let rw=null;if(rk<=3){const R=SEASON_RW[rk-1],gold=R.g(S.hero.lvl),it=seasonItem(R.ri);S.hero.gold+=gold;let sold=0;if(S.hero.bag.length<bagMax())S.hero.bag.push(it);else{sold=it.value;S.hero.gold+=sold}
     rw={gold,item:it.name,r:it.r,sold}}
   const n=S.season.n;S.seasonHist=S.seasonHist||[];S.seasonHist.unshift({n,top,rk,pts:S.elo,rw});S.seasonHist.length=Math.min(S.seasonHist.length,5);
   S.seasonNotice={n,top,rk,pts:S.elo,rw};
@@ -1884,7 +1893,7 @@ function mythFragDrop(e){if(G.castle.mine)return;const lv=G.castle.lvl||1,p=isBo
   const me=S.hero.cls,pool=Object.keys(MYTH).filter(k=>!MYTH[k].cls||MYTH[k].cls===me),k=Math.random()<.7&&pool.length?pick(pool):pick(Object.keys(MYTH));
   S.mfrag=S.mfrag||{};S.mfrag[k]=(S.mfrag[k]||0)+1;G.frags=G.frags||[];G.frags.push(k);
   addText(e.x,e.y,e.ht+26,'✦ Fragment mythique !','#f08af0',20);spark(e.x,e.y,e.ht*.6,18,'225,75,224',{spd:140,up:180,life:.8,size:7,glow:true});ring(e.x,e.y,6,50,.5,0xff3d6e)}
-function viewArtisan(){const fr=S.mfrag||{},cr=S.craft,now=NOW(),full=S.hero.bag.length>=BAG_MAX;
+function viewArtisan(){const fr=S.mfrag||{},cr=S.craft,now=NOW(),full=S.hero.bag.length>=bagMax();
   let top='';if(cr&&MYTH[cr.k]){const d=MYTH[cr.k],left=cr.end-now,p=clamp(1-left/(cr.dur||1),0,1);
     top=`<section class="card mythnow"><h3>🔨 Sur l'enclume : <span style="color:${RCOL.mythique}">${d.ic} ${d.n}</span></h3>${left>0?`<div class="xp" style="height:10px;width:100%;max-width:none"><i style="width:${p*100}%;background:linear-gradient(90deg,#9a2ad8,#e14be0)"></i></div><p class="sub" style="margin:6px 0 0" data-craft-left>Prêt dans ${fmtLeft(left)}</p>`:
       `<p class="sub" style="margin:4px 0 8px">L'objet est prêt !</p><button class="btn primary" data-act="mythTake" ${full?'disabled':''}>${full?'Sac plein':'Récupérer l\'objet mythique'}</button>`}</section>`}
@@ -2046,7 +2055,7 @@ function mountTown(){const cv=$('#townCv');if(!cv)return;TWN.cv=cv;const c=cv.ge
   drawTown(c,performance.now(),S.shop);cancelAnimationFrame(TWN.raf);TWN.raf=requestAnimationFrame(loop)}
 function viewMarche(){
   if(shopIn&&!SHOPS.some(x=>x.k===shopIn))shopIn=null;if(shopIn)S.shop=shopIn;
-  const shop=SHOPS.find(x=>x.k===S.shop)||SHOPS[2],m=S.market,eq=S.hero.equip,full=S.hero.bag.length>=BAG_MAX;
+  const shop=SHOPS.find(x=>x.k===S.shop)||SHOPS[2],m=S.market,eq=S.hero.equip,full=S.hero.bag.length>=bagMax();
   const signs=SHOPS.map(s=>{const sw=s.k==='mage'?s.w+6:s.w,sx=s.x+s.w/2-sw/2,y0=STREET-s.h;
     return `<button class="tsign ${s.k===shop.k?'on':''}" data-act="shop" data-k="${s.k}" style="left:${sx/TW*100}%;top:${(s.k==='mage'?y0+s.h*.62:y0+Math.max(14,s.h-34))/TH*100}%;width:${sw/TW*100}%" aria-label="${s.n} : ${s.d}"><b>${s.n}</b><small>${s.d}</small></button>`}).join('');
   const hits=SHOPS.map(s=>`<button class="thit" data-act="shop" data-k="${s.k}" tabindex="-1" aria-hidden="true" style="left:${(s.x-4)/TW*100}%;top:${(STREET-s.h-(s.k==='mage'?32:16))/TH*100}%;width:${(s.w+8)/TW*100}%;height:${(s.h+(s.k==='mage'?32:16))/TH*100}%"></button>`).join('');
@@ -2067,7 +2076,7 @@ function viewMarche(){
   else if(shop.k==='pals')body=`<section class="card">${Object.entries(PALS).map(([k,x])=>`<div class="row ${palOpen(k)?'':'off'}"><div class="rinfo"><b>${x.ic} ${x.n}${x.tier===3?' <small style="color:#ffaa2e">légendaire</small>':''}</b><span>${x.d}</span></div>${!palOpen(k)?`<span class="chip">🔒 Ménagerie niv. ${x.tier}</span>`:S.pals.own[k]?`<button class="btn ${S.pals.active===k?'primary':''}" data-act="equipPal" data-k="${k}">${S.pals.active===k?'Équipé':'Équiper'}</button>`:`<button class="btn" data-act="buyPal" data-k="${k}" ${S.hero.gold<x.price?'disabled':''}>Adopter (${x.price} or)</button>`}</div>`).join('')}</section>`;
   else{const sell=S.hero.bag.map(it=>`<div class="row"><div class="rinfo"><b style="color:${RCOL[it.r]}">${esc(it.name)}</b><span>${rarLabel(it)} · ${SLOT_LABEL[it.slot]}${it.cls?' · '+CLASSES[it.cls].name:''} · niv. ${it.lvl}</span></div><button class="btn" data-act="sell" data-id="${it.id}">Vendre (${sellVal(it)} or)</button>${it.ri>=1?`<button class="btn ghost" data-act="salv" data-id="${it.id}" title="Détruit l'objet pour récupérer des composants d'amélioration">Démanteler (🔷 ${salvGive(it).rune}${salvGive(it).heart?` · 🌟 ${salvGive(it).heart}`:''}${salvGive(it).uni?` · 💠 ${salvGive(it).uni}`:''})</button>`:''}</div>`).join('');
     const commons=S.hero.bag.filter(i=>i.ri===0),cvv=commons.reduce((a,i)=>a+sellVal(i),0);
-    body=`<section class="card"><h3>Sac du ${CL().name} <small>${S.hero.bag.length} / ${BAG_MAX}</small></h3>${commons.length?`<div class="bar" style="margin-bottom:6px"><button class="btn" data-act="sellCommons">Vendre les ${commons.length} objets communs (${cvv} or)</button></div>`:''}${sell||'<p class="empty">Ton sac est vide.</p>'}</section>`}
+    body=`<section class="card"><h3>Sac du ${CL().name} <small>${S.hero.bag.length} / ${bagMax()}</small></h3>${bagTools()}${commons.length?`<div class="bar" style="margin-bottom:6px"><button class="btn" data-act="sellCommons">Vendre les ${commons.length} objets communs (${cvv} or)</button></div>`:''}${sell||'<p class="empty">Ton sac est vide.</p>'}</section>`}
   return `<div class="wrap"><div><h2>Marché de Bourg-Créneau</h2><p class="sub">${shopIn?'Tu es dans l\'échoppe : la porte à gauche te ramène dans la rue.':'Clique sur une échoppe pour y entrer.'} Les marchands d'objets renouvellent leur stock toutes les 10 minutes ; l'herboriste une fois par jour.</p></div>
   ${shopIn?shopInHTML(shop):`<div class="townwrap"><div class="town" style="aspect-ratio:${TW}/${TH};min-width:${Math.round(760*TW/456)}px"><canvas id="townCv" width="${TW}" height="${TH}"></canvas>${hits}${signs}</div></div>
   <nav class="subtabs" role="tablist">${SHOPS.map(s=>`<button role="tab" data-act="shop" data-k="${s.k}">${SHOP_AV[s.k]} ${s.n}</button>`).join('')}</nav>
@@ -2202,7 +2211,7 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');i
   if(a==='shop'){S.shop=b.dataset.k;shopIn=b.dataset.k;SHOPTALK.k=null;save();renderHub();$('#main').scrollTop=0;tone(220,330,.12,'triangle',.05);tone(330,440,.12,'triangle',.04,.08);return}
   if(a==='shopOut'){shopIn=null;SHOPHOV=false;renderHub();$('#main').scrollTop=0;tone(330,200,.15,'triangle',.05);return}
   if(a==='npcTalk'){if(shopIn){shopSay(shopIn);tone(500+Math.random()*200,560,.06,'square',.02)}return}
-  if(a==='buy'){const arr=(S.market.shops||{})[b.dataset.k]||[],o=arr.find(x=>x.it.id===id);if(!o||S.hero.gold<o.price||S.hero.bag.length>=BAG_MAX)return;S.hero.gold-=o.price;S.hero.bag.push(o.it);cnt('buy_'+b.dataset.k);S.market.shops[b.dataset.k]=arr.filter(x=>x!==o);save();renderHub();sfx.loot();toast(`${o.it.name} acheté`)}
+  if(a==='buy'){const arr=(S.market.shops||{})[b.dataset.k]||[],o=arr.find(x=>x.it.id===id);if(!o||S.hero.gold<o.price||S.hero.bag.length>=bagMax())return;S.hero.gold-=o.price;S.hero.bag.push(o.it);cnt('buy_'+b.dataset.k);S.market.shops[b.dataset.k]=arr.filter(x=>x!==o);save();renderHub();sfx.loot();toast(`${o.it.name} acheté`)}
   if(a==='reroll'){const k=b.dataset.k,c=20+8*S.hero.lvl;if(!SHOP_ITEMS[k]||S.hero.gold<c)return;S.hero.gold-=c;S.market.shops[k]=genShop(k);save();renderHub();sfx.coin()}
   if(a==='buyPot'){if(S.hero.gold<50||S.extraPot>=3)return;S.hero.gold-=50;S.extraPot++;save();renderHub();sfx.heal();toast('Potion de réserve ajoutée à ton prochain raid')}
   if(a==='salv'){const i=S.hero.bag.findIndex(x=>x.id===id);if(i<0)return;const it=S.hero.bag[i],g=salvGive(it),m=MATS();m.rune+=g.rune;m.heart+=g.heart;m.uni+=g.uni||0;S.hero.bag.splice(i,1);save();renderHub();sfx.coin();toast(`${it.name} démantelé : +${g.rune} 🔷${g.heart?` · +${g.heart} 🌟`:''}${g.uni?` · +${g.uni} 💠`:''}`);return}
@@ -2220,7 +2229,7 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');i
   if(a==='devOpenBtn'){devOpen();return}
   if(a==='dev'){devDo(b.dataset.k);if(!$('#modal').hidden&&tab&&!G.active)renderHub();return}
   if(a==='mythForge'){const k=b.dataset.k,d=MYTH[k];if(!d||S.craft)return;const n=(S.mfrag||{})[k]||0,cost=mythCost(k);if(n<MYTH_N||S.hero.gold<cost)return;S.mfrag[k]-=MYTH_N;S.hero.gold-=cost;const dur=mythMin(k)*60000;S.craft={k,end:NOW()+dur,dur};save();renderHub();renderTop();toast(`L'artisan forge ${d.n} : prêt dans ${mythMin(k)} min`);return}
-  if(a==='mythTake'){const cr=S.craft;if(!cr||cr.end>NOW()||S.hero.bag.length>=BAG_MAX)return;const it=makeMyth(cr.k);S.hero.bag.push(it);S.craft=null;cnt('myth');save();renderHub();renderTop();toast(`✦ ${it.name} rejoint ton sac !`);sfx.chest();return}
+  if(a==='mythTake'){const cr=S.craft;if(!cr||cr.end>NOW()||S.hero.bag.length>=bagMax())return;const it=makeMyth(cr.k);S.hero.bag.push(it);S.craft=null;cnt('myth');save();renderHub();renderTop();toast(`✦ ${it.name} rejoint ton sac !`);sfx.chest();return}
   if(a==='bind'){rebind={a:b.dataset.a,s:+b.dataset.s};renderHub()}
   if(a==='resetKeys'){S.keys=defaultKeys();rebind=null;save();renderHub()}
   if(a==='match')findMatch();
@@ -2376,7 +2385,7 @@ function statRows(it,cmp){
   return h;
 }
 function viewRoster(){return `<section class="card"><h3>Personnages</h3><p class="sub" style="margin:0 0 8px">Chaque héros a son niveau, ses talents, son équipement et son sac. L'or, le château et les potions sont partagés.</p><div class="roster">${Object.entries(CLASSES).map(([k,c])=>{const on=S.hero.cls===k,un=S.unlocked[k],d=un?heroData(k):null;
-  return `<div class="frame rcard ${on?'on':''}"><span class="ric">${CLS_IC[k]}</span><div><b>${c.name}</b><br><small>${un?`niveau ${d.lvl} · ${d.bag.length}/${BAG_MAX} objets`:`Verrouillé · ${CBASE[k].arme.map(x=>x[0]).join(', ')}`}</small></div>${koLeft(k)?`<span class="chip no">🤕 <b data-ko="${k}">${fmtKO(koLeft(k))}</b></span>`:''}${on?'<span class="chip ok">En jeu</span>':un?`<button class="btn primary" data-act="playCls" data-k="${k}">Jouer</button>`:`<button class="btn" data-act="unlockCls" data-k="${k}" ${S.hero.gold<UNLOCK[k]?'disabled':''}>🔒 Débloquer (${fmt(UNLOCK[k])} or)</button>`}</div>`}).join('')}</div></section>`}
+  return `<div class="frame rcard ${on?'on':''}"><span class="ric">${CLS_IC[k]}</span><div><b>${c.name}</b><br><small>${un?`niveau ${d.lvl} · ${d.bag.length}/${bagMax()} objets`:`Verrouillé · ${CBASE[k].arme.map(x=>x[0]).join(', ')}`}</small></div>${koLeft(k)?`<span class="chip no">🤕 <b data-ko="${k}">${fmtKO(koLeft(k))}</b></span>`:''}${on?'<span class="chip ok">En jeu</span>':un?`<button class="btn primary" data-act="playCls" data-k="${k}">Jouer</button>`:`<button class="btn" data-act="unlockCls" data-k="${k}" ${S.hero.gold<UNLOCK[k]?'disabled':''}>🔒 Débloquer (${fmt(UNLOCK[k])} or)</button>`}</div>`}).join('')}</div></section>`}
 let RES_OPEN=true;
 function resCard(){const m=MATS(),fr=S.mfrag||{},hl=S.hl||{},sd=S.seeds||{},pots=S.pots||{},br=S.brews||[];
   const ch=(ic,n,v,col,tip)=>`<span class="rchip ${v?'':'zero'}" ${tip?`title="${esc(tip)}"`:''}${col?` style="--rc:${col}"`:''}><i>${ic}</i><span>${n}</span><b>${typeof v==='number'?fmt(v):v}</b></span>`;
@@ -2404,11 +2413,11 @@ function viewHeros(){
   const f=sel&&findItem(sel);
   if(f){const {it,where}=f,R=RAR[it.ri],ok=canUse(it),cur=where==='bag'&&ok?eq[it.slot]:null;
     const targets=(it.cls?[it.cls,'recrue']:Object.keys(CLASSES)).filter(k=>k!==me&&S.unlocked[k]);
-    const send=where==='bag'?targets.map(k=>`<button class="btn" data-act="sendTo" data-k="${k}" data-id="${it.id}" ${heroData(k).bag.length>=BAG_MAX?'disabled':''}>Envoyer au ${CLASSES[k].name}</button>`).join(''):'';
+    const send=where==='bag'?targets.map(k=>`<button class="btn" data-act="sendTo" data-k="${k}" data-id="${it.id}" ${heroData(k).bag.length>=bagMax()?'disabled':''}>Envoyer au ${CLASSES[k].name}</button>`).join(''):'';
     det=`<div class="detail"><p class="dname" style="color:${RCOL[it.r]}">${esc(it.name)}</p><p class="dmeta">${rarLabel(it)} · ${SLOT_LABEL[it.slot]} · ${it.cls?CLASSES[it.cls].name:'tous les héros'} · niveau ${it.lvl}${it.up?' · amélioré +'+it.up:''}${where==='equip'?' · équipé':''}</p>
     ${ok?'':`<p class="dmeta" style="color:#ff8a7a">Réservé au ${CLASSES[it.cls].name} : ton ${CLASSES[me].name} ne peut pas l'utiliser.${S.unlocked[it.cls]?'':' Débloque ce personnage pour le lui envoyer.'}</p>`}
     <ul class="dstats">${statRows(it,cur)}${affRows(it)}</ul>${cur?`<p class="dmeta">Comparé à : ${esc(cur.name)}${cur.aff?` (${Object.keys(cur.aff).map(k=>AFX[k].ic+' '+AFX[k].n).join(', ')})`:''}</p>`:''}
-    <div class="actions">${where==='bag'?(ok?`<button class="btn primary" data-act="equip" data-id="${it.id}">Équiper</button>`:''):`<button class="btn" data-act="unequip" data-id="${it.id}" ${S.hero.bag.length>=BAG_MAX?'disabled':''}>Retirer</button>`}${send}
+    <div class="actions">${where==='bag'?(ok?`<button class="btn primary" data-act="equip" data-id="${it.id}">Équiper</button>`:''):`<button class="btn" data-act="unequip" data-id="${it.id}" ${S.hero.bag.length>=bagMax()?'disabled':''}>Retirer</button>`}${send}
     <button class="btn" data-act="upg" data-id="${it.id}" ${upCan(it)?'':'disabled'}>${upLabel(it)}</button><small class="sub" style="display:block;margin:4px 0 0;width:100%">Amélioration +${it.up||0}/${UP_MAX} · tes composants : 🔷 ${MATS().rune} fragments runiques · 🌟 ${MATS().heart} cœurs légendaires. Paliers +6 à +10 : fragments runiques ; +11 à +15 : cœurs légendaires.</small><button class="btn" data-act="sell" data-id="${it.id}">Vendre (${sellVal(it)} or)</button></div></div>`}
   const commons=S.hero.bag.filter(i=>i.ri===0),cvv=commons.reduce((a,i)=>a+sellVal(i),0);
   const HT=[['equip','🎒 Équipement & sac'],['stats','📊 Statistiques'],['skills','✨ Compétences & talents'],['roster','👥 Personnages']];
@@ -2425,7 +2434,7 @@ function viewHeros(){
     const tiles=items.map(it=>{const ok=canUse(it),up=ok&&itemPower(it)>itemPower(eq[it.slot]);return `<button class="tile r-${it.r} ${sel===it.id?'on':''} ${ok?'':'no'}" data-act="sel" data-id="${it.id}" aria-label="${esc(it.name)}, niveau ${it.lvl}${it.cls?', '+CLASSES[it.cls].name:''}">${itemIcon(it)}<span class="tl">${it.lvl}</span>${it.up?`<span class="tup">+${it.up}</span>`:''}${up?'<span class="up" title="Meilleur que ton équipement">▲</span>':''}${it.cls?`<span class="cb" title="${CLASSES[it.cls].name}">${CLS_IC[it.cls]}</span>`:''}</button>`}).join('');
     body=`<div class="hero-grid"><section class="card"><h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px">Équipement<button class="btn sm" data-act="showSets">🧩 Ensembles</button></h3><div id="l3d" class="h3d">${window.THREE?'':'<p class="empty" style="padding:20px">Le moteur 3D n\'a pas pu se charger.</p>'}</div><div class="slots">${slots}</div>
       <p class="sub" style="margin:8px 0 0;font-size:12px">Toutes tes stats détaillées (vol de vie, poison, épines…) sont dans l'onglet <button class="linkb" data-act="htab" data-k="stats">📊 Statistiques</button>.</p></section>
-      <div class="hcol">${f?det:''}<section class="card"><h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Sac du ${CL().name} <small>${S.hero.bag.length} / ${BAG_MAX}</small>${commons.length?`<button class="btn sm" data-act="sellCommons">Vendre les ${commons.length} communs (${cvv} or)</button>`:''}</h3>
+      <div class="hcol">${f?det:''}<section class="card"><h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Sac du ${CL().name} <small>${S.hero.bag.length} / ${bagMax()}</small>${commons.length?`<button class="btn sm" data-act="sellCommons">Vendre les ${commons.length} communs (${cvv} or)</button>`:''}</h3>${bagTools()}
       ${S.hero.bag.length?`<div class="bagbar"><div class="bfl">${FL.map(([k,n])=>`<button class="chipb ${bagF===k?'on':''}" data-act="bagF" data-k="${k}">${n}</button>`).join('')}</div><div class="bso"><small>Trier :</small>${SO.map(([k,n])=>`<button class="chipb ${bagS===k?'on':''}" data-act="bagS" data-k="${k}">${n}</button>`).join('')}</div></div>`:''}
       ${tiles?`<div class="bag">${tiles}</div>`:S.hero.bag.length?'<p class="empty">Aucun objet ne correspond à ce filtre.</p>':'<p class="empty">Ton sac est vide. Pille un château pour remplir ton coffre de butin.</p>'}
       ${f?'':'<p class="sub" style="margin:8px 0 0;font-size:12px">Touche un objet pour voir ses stats, le comparer, l\'équiper, l\'améliorer ou le vendre. ▲ vert = plus fort que ce que tu portes ; grisé = réservé à un autre personnage.</p>'}</section>${resCard()}</div></div>`}
@@ -2471,7 +2480,7 @@ function viewChateau(){
   if(ct==='caserne')return h+viewCaserne()+'</div>';
   if(ct==='boss')return h+viewBosses()+'</div>';
   if(ct==='pieges')return h+viewTrapTree()+'</div>';
-  h+=`<div class="bar"><button class="btn primary big" data-act="edit3d" data-room="0">🏗 Ouvrir le mode construction 3D</button><span class="sub" style="margin:0">Chaque salle : <b>${cap} places de monstres</b> et <b>${capT()} places de pièges</b> (4 pièges au plus). Les monstres non recrutés s'obtiennent à la caserne.</span>${(()=>{let g=0;for(let j=0;j<n;j++)g+=roomRefund(j);return rstBtn("all","🧹 Vider toutes les salles",g)})()}</div><div class="rooms">`;
+  h+=`<div class="bar"><button class="btn primary big" data-act="edit3d" data-room="0">🏗 Ouvrir le mode construction 3D</button><span class="sub" style="margin:0">Chaque salle : <b>${cap} places de monstres</b> et <b>${capT()} places de pièges</b> (${MAX_TRAPS} pièges et ${MAX_MOBS} monstres au plus). Les monstres non recrutés s'obtiennent à la caserne.</span>${(()=>{let g=0;for(let j=0;j<n;j++)g+=roomRefund(j);return rstBtn("all","🧹 Vider toutes les salles",g)})()}</div><div class="rooms">`;
   for(let i=0;i<5;i++){
     if(i>=n){h+=`<section class="room locked"><h3>Salle ${i+1}</h3><p class="empty">Se débloque au niveau ${lvlForRooms(i+1)} du château.</p></section>`;continue}
     const r=S.my.rooms[i],used=monUsed(i),tu=trapUsed(i),ct=capT();
@@ -2482,7 +2491,7 @@ function viewChateau(){
     for(const k in CREA){const c=CREA[k],cnt=r.mobs[k]||0;if(!mobOpen(k)&&!cnt)continue;const ok=used+c.pts<=cap+1e-9&&S.hero.gold>=c.price&&mobCount(i)<MAX_MOBS&&!(k==='poule'&&cnt>=MAX_POULES);
       h+=`<div class="row"><div class="rinfo"><b>${c.name} <small style="color:var(--muted)">niv. ${mLv(k)}</small></b><span>${c.desc} ${fmtPl(c.pts)} pl. · ${c.price} or</span></div><div class="stepper"><button class="btn sq" data-act="rem" data-room="${i}" data-type="mobs" data-k="${k}" ${cnt?'':'disabled'} aria-label="Retirer ${c.name}">−</button><span class="cnt">${cnt}</span><button class="btn sq" data-act="add" data-room="${i}" data-type="mobs" data-k="${k}" ${ok?'':'disabled'} aria-label="Ajouter ${c.name}">+</button></div></div>`}
     if(i<n-1){h+='<p class="grp">Pièges</p>';
-      for(const k in TRAPS){const c=TRAPS[k],cnt=r.traps[k]||0,ok=tu+c.pts<=ct&&S.hero.gold>=c.price&&trapCount(i)<4;
+      for(const k in TRAPS){const c=TRAPS[k],cnt=r.traps[k]||0,ok=tu+c.pts<=ct&&S.hero.gold>=c.price&&trapCount(i)<MAX_TRAPS;
         h+=`<div class="row"><div class="rinfo"><b>${c.name}</b><span>${c.desc} ${c.pts} pl. · ${c.price} or</span></div><div class="stepper"><button class="btn sq" data-act="rem" data-room="${i}" data-type="traps" data-k="${k}" ${cnt?'':'disabled'} aria-label="Retirer ${c.name}">−</button><span class="cnt">${cnt}</span><button class="btn sq" data-act="add" data-room="${i}" data-type="traps" data-k="${k}" ${ok?'':'disabled'} aria-label="Ajouter ${c.name}">+</button></div></div>`}}
     else h+='<p class="note">Le boss garde le coffre ici. Pas de pièges dans la salle du trésor.</p>';
     h+=`</details></section>`;
@@ -2590,13 +2599,15 @@ document.addEventListener('click',ev=>{
   if(a==='sel'){sel=sel===id?null:id;renderHub();return}if(a==='htab'){heroTab=b.dataset.k;if(heroTab!=='equip')sel=null;renderHub();window.scrollTo({top:0});return}if(a==='prestige'){const k=subKey();if(!k)return;const o=subLvO(k);if(o.lvl<MAST_MAX||(o.pr||0)>=PRES_MAX)return;if(!PRES_ARM){const tk=PRES_ARM=NOW();renderHub();setTimeout(()=>{if(PRES_ARM===tk){PRES_ARM=false;if(tab==='heros')renderHub()}},5000);return}PRES_ARM=false;o.pr=(o.pr||0)+1;o.lvl=1;o.xp=0;save();renderHub();renderTop();try{sfx.loot()}catch(e){}try{toast('★ Prestige '+o.pr+' atteint ! +4 % de dégâts et +2 % de PV permanents')}catch(e){}return}if(a==='presSkin'){S.look=S.look||{};S.look.noPres=!S.look.noPres;save();renderHub();return}if(a==='setCraft'){const k=b.dataset.k,m=MATS(),a0=setAct(k),nx=a0>=4?0:a0>=2?4:2,C=SETC[nx];if(!SETS[k]||!C||S.hero.gold<C.g||m.uni<C.u)return;S.hero.gold-=C.g;m.uni-=C.u;S.setAct=Object.assign({},S.setAct,{[k]:nx});save();renderHub();renderTop();sfx.level();toast(`🧵 Ensemble ${SETS[k].n} confectionné : bonus ${nx} pièces activé !`);return}if(a==='goShop'){if(!tabOpen('marche')){showPlInfo();return}{S.shop=b.dataset.k;tab='marche';sel=null;renderHub();window.scrollTo({top:0})}return}if(a==='tUp'){const k=b.dataset.k,br=b.dataset.b;if(!TTREE[k])return;S.my.tUp=S.my.tUp||{};const u=S.my.tUp[k]||{b:'',l:0};let nl,c;if(u.b&&u.b!==br){nl=1;c=TUP_COST[1]}else{nl=(u.l||0)+1;c=TUP_COST[nl]}if(!c||nl>3||S.hero.gold<c)return;S.hero.gold-=c;S.my.tUp[k]={b:br,l:nl};save();renderHub();renderTop();sfx.level();toast(`⚙️ ${TRAPS[k].name} : ${TTREE[k][br][0]} niv. ${nl}`);return}if(a==='onReg'){onlineAuth('register');return}if(a==='onLogin'){onlineAuth('login');return}if(a==='onLogout'){DEV_OK=false;devFab();S.online={name:S.online.name};save();ONL.me=ONL.opps=ONL.events=ONL.raids=null;ONL.msg='';renderHub();return}if(a==='onPub'){onlinePublish();return}if(a==='cloudSave'){cloudSave(true);return}if(a==='cloudLoad'){$('#modal').hidden=true;cloudLoad();return}if(a==='cloudAsk'){CLOUD_ASKED=false;const c=ONL.cloud;if(!c){toast('Aucune sauvegarde en ligne pour ce compte.');return}ONL.cloud=Object.assign({},c,{t:Math.max(c.t,(S.lastT||0)+61e3)});cloudOffer();ONL.cloud=c;return}if(a==='onCopyId'){try{navigator.clipboard.writeText(S.online.id);toast('Identifiant copié')}catch(e){toast(S.online.id)}return}if(a==='onRaid'){onlineRaid(b.dataset.id);return}if(a==='onRefresh'){onlineLoad(true);return}if(a==='onRetry'){ONL.up=null;renderHub();return}if(a==='onApi'){S.onlineApi=($('#onApi')||{}).value||'';save();ONL.up=null;ONL.t=0;renderHub();return}if(a==='bagF'){bagF=b.dataset.k;renderHub();return}if(a==='bagS'){bagS=b.dataset.k;renderHub();return}
   if(a==='playCls'){const k=b.dataset.k;if(!S.unlocked[k])return;switchHero(k);sel=null;save();renderHub();sfx.level();toast(`${CLASSES[k].name} niv. ${S.hero.lvl} — prêt au combat`);return}
   if(a==='unlockCls'){const k=b.dataset.k,c=UNLOCK[k];if(S.unlocked[k]||S.hero.gold<c)return;S.hero.gold-=c;S.unlocked[k]=true;heroData(k);save();renderHub();sfx.level();toast(`${CLASSES[k].name} débloqué ! Clique sur « Jouer » pour l'incarner.`);return}
-  if(a==='sendTo'){const k=b.dataset.k,i=S.hero.bag.findIndex(x=>x.id===id);if(i<0||!S.unlocked[k]||k===S.hero.cls)return;const it=S.hero.bag[i];if(it.cls&&it.cls!==k&&k!=='recrue')return;const d=heroData(k);if(d.bag.length>=BAG_MAX){toast(`Le sac du ${CLASSES[k].name} est plein.`);return}S.hero.bag.splice(i,1);d.bag.push(it);sel=null;save();renderHub();toast(`${it.name} envoyé au ${CLASSES[k].name}`);return}
+  if(a==='sendTo'){const k=b.dataset.k,i=S.hero.bag.findIndex(x=>x.id===id);if(i<0||!S.unlocked[k]||k===S.hero.cls)return;const it=S.hero.bag[i];if(it.cls&&it.cls!==k&&k!=='recrue')return;const d=heroData(k);if(d.bag.length>=bagMax()){toast(`Le sac du ${CLASSES[k].name} est plein.`);return}S.hero.bag.splice(i,1);d.bag.push(it);sel=null;save();renderHub();toast(`${it.name} envoyé au ${CLASSES[k].name}`);return}
   if(a==='equip'){const i=S.hero.bag.findIndex(x=>x.id===id);if(i<0)return;const it=S.hero.bag[i];if(!canUse(it)){toast(`Réservé au ${CLASSES[it.cls].name}.`);return}S.hero.bag.splice(i,1);const old=S.hero.equip[it.slot];if(old)S.hero.bag.push(old);S.hero.equip[it.slot]=it;save();renderHub();toast(`${it.name} équipé`);return}
-  if(a==='unequip'){const f=findItem(id);if(!f||S.hero.bag.length>=BAG_MAX)return;S.hero.equip[f.it.slot]=null;S.hero.bag.push(f.it);save();renderHub();return}
+  if(a==='unequip'){const f=findItem(id);if(!f||S.hero.bag.length>=bagMax())return;S.hero.equip[f.it.slot]=null;S.hero.bag.push(f.it);save();renderHub();return}
   if(a==='sell'){const f=findItem(id);if(!f)return;if(f.where==='equip')S.hero.equip[f.it.slot]=null;else S.hero.bag=S.hero.bag.filter(x=>x.id!==id);const sv=sellVal(f.it);S.hero.gold+=sv;cnt('sold');cnt('soldGold',sv);sel=null;save();renderHub();sfx.coin();toast(`Vendu pour ${sv} or`);return}
+  if(a==='buyBag'){if(bagMax()>=BAG_CAP)return;const c=bagCost();if(S.hero.gold<c){toast('Pas assez d\'or');return}S.hero.gold-=c;S.bags=(S.bags||0)+1;save();renderHub();renderTop();sfx.coin();toast(`👜 Nouveau sac : ${bagMax()} places pour chaque héros`);return}
+  if(a==='asell'){S.asell=S.asell||{};const k=b.dataset.k;S.asell[k]=!S.asell[k];save();renderHub();toast(S.asell[k]?`Vente auto activée : ${(ASELL_K.find(x=>x[0]===k)||[,''])[1]}`:'Vente auto désactivée');return}
   if(a==='sellCommons'){let g=0,n=0;S.hero.bag=S.hero.bag.filter(x=>{if(x.ri===0){g+=sellVal(x);n++;return false}return true});S.hero.gold+=g;cnt('sold',n);cnt('soldGold',g);sel=null;save();renderHub();sfx.coin();toast(`Objets communs vendus : +${g} or`);return}
   if(a==='add'||a==='rem'){const ri=+b.dataset.room,ty=b.dataset.type,k=b.dataset.k,def=(ty==='mobs'?CREA:TRAPS)[k],r=S.my.rooms[ri];
-    if(a==='add'){if(ty==='mobs'&&!mobOpen(k))return;const lim=ty==='mobs'?(monUsed(ri)+def.pts>capacity()+1e-9||mobCount(ri)>=MAX_MOBS||(k==='poule'&&(r.mobs.poule||0)>=MAX_POULES)):(trapUsed(ri)+def.pts>capT()||trapCount(ri)>=4);if(lim||S.hero.gold<def.price)return;r[ty][k]=(r[ty][k]||0)+1;S.hero.gold-=def.price;if(!Array.isArray(r.pos))r.pos=[];edAutoPlace(ri)}
+    if(a==='add'){if(ty==='mobs'&&!mobOpen(k))return;const lim=ty==='mobs'?(monUsed(ri)+def.pts>capacity()+1e-9||mobCount(ri)>=MAX_MOBS||(k==='poule'&&(r.mobs.poule||0)>=MAX_POULES)):(trapUsed(ri)+def.pts>capT()||trapCount(ri)>=MAX_TRAPS);if(lim||S.hero.gold<def.price)return;r[ty][k]=(r[ty][k]||0)+1;S.hero.gold-=def.price;if(!Array.isArray(r.pos))r.pos=[];edAutoPlace(ri)}
     else{if(!(r[ty][k]>0))return;r[ty][k]--;trimPos(r);S.hero.gold+=def.price}
     S.my.validated=false;save();renderHub();renderTop();return}
   if(a==='roomReset'){const key=b.dataset.k;if(RESET_ARM!==key){RESET_ARM=key;renderHub();const tk=key;setTimeout(()=>{if(RESET_ARM===tk){RESET_ARM=null;if(tab==='chateau')renderHub()}},5000);return}RESET_ARM=null;let g=0;if(key==='all'){for(let j=0;j<roomCount();j++)g+=roomClear(j)}else g=roomClear(+key);S.my.validated=false;save();renderHub();renderTop();sfx.coin();toast(`🧹 ${key==='all'?'Toutes les salles vidées':'Salle '+(+key+1)+' vidée'} : +${fmt(g)} or remboursés`);return}
@@ -2654,6 +2665,7 @@ function startRaid(castle){phoneCam();JOY.used=false;JOY.id=null;JOY.on=false;se
   resize();nextRoom();G.last=performance.now();requestAnimationFrame(loop);
 }
 const DIFF={hp:1.5,atk:1.15};
+const MOB_HPX=1.4,BOSS_HPX=1.5;for(const k in MOB)MOB[k].hp=Math.round(MOB[k].hp*(BOSSORDER.includes(k)?BOSS_HPX:MOB_HPX));
 function makeEnemy(kind,x,y,lvl){
   if(G.active&&!G.edit){S.seen=S.seen||{};S.seen[kind]=1}
   const b=MOB[kind],bs=BOSSORDER.includes(kind),gr=1+.36*(lvl-1),dh=clamp(1+.08*lvl,1,2.2),hm=gr*(bs?dh*.8*((G.castle&&G.castle.bossHp)||1):dh),am=gr*clamp(.85+.07*lvl,.85,1.9)*(bs?Math.sqrt((G.castle&&G.castle.bossHp)||1):1);
@@ -2733,6 +2745,7 @@ const LAYOUTS={salle:{n:'Salle à piliers',sz:[1100,640],mob:1},ouverte:{n:'Gran
  donjonL:{n:'Donjon : 3 salles et 2 couloirs',sz:[2300,1500],mob:1.5},donjonZ:{n:'Donjon en escalier',sz:[2600,1700],mob:1.7},fourche:{n:'Donjon à la fourche',sz:[2500,1500],mob:1.6},
  antichambre:{n:'Antichambre et grande salle',sz:[1900,1140],mob:1.35},trois:{n:'Trois salles en enfilade',sz:[2200,1100],mob:1.5},quatre:{n:'Quatre salles en boucle',sz:[2000,1300],mob:1.6},galeries:{n:'Galeries coudées',sz:[2000,1300],mob:1.55},
  H:{n:'Salle en H',sz:[1600,1000],mob:1.4},U:{n:'Salle en U',sz:[1600,1000],mob:1.4},K:{n:'Salle en K',sz:[1600,1000],mob:1.45},serpent:{n:'Galerie serpentine',sz:[1700,1000],mob:1.5}};
+const ROOM_SCALE=1.4;for(const k in LAYOUTS){const z=LAYOUTS[k].sz;LAYOUTS[k].sz=[Math.round(z[0]*ROOM_SCALE),Math.round(z[1]*ROOM_SCALE)]}
 /* Plans en grille (16 × 10) : # = mur plein, S = entrée, D = herse de sortie, c = coffret possible. Lecture : de gauche (entrée) à droite (sortie). */
 const MASKS={
  donjonL:["#..........###############", "#c.........#######......c.", "#..........#######........", "#.........................", "#.........................", "#..........#######........", "#........c.#######.......D", "####..############........", "####..############........", "####..####################", "####..####################", "####..####################", ".......###################", ".......###################", "S......###################", ".......###################", "......c###################", "##########################"],
@@ -2849,8 +2862,8 @@ const ICO={gobelin:'👺',archer:'🏹',gelee:'🟢',brute:'👹',chaman:'🪶',
 const ED_CELL=24;
 function edToUV(x,y){const B=G.B;return G.portrait?{u:(B.b-y)/(B.b-B.t),v:(x-B.l)/(B.r-B.l)}:{u:(x-B.l)/(B.r-B.l),v:(y-B.t)/(B.b-B.t)}}
 function edAutoPlace(j){const r=S.my.rooms[j],n=roomCount();if(!Array.isArray(r.pos))r.pos=[];const pw=planWalls(j),rnd=mulberry32(hashStr('auto'+j+':'+NOW()));
-  const free=(u,v)=>!(pw&&pw.walls.some(w=>u>w.u0-.04&&u<w.u1+.04&&v>w.v0-.06&&v<w.v1+.06))&&!r.pos.some(q=>Math.hypot(q.u-u,(q.v-v)*.6)<.045);
-  const add=(k,t,b)=>{for(let g=0;g<200;g++){const u=.22+rnd()*.72,v=.08+rnd()*.84;if(free(u,v)){r.pos.push({k,t,b,u:+u.toFixed(3),v:+v.toFixed(3)});return}}};
+  const free=(u,v)=>!(pw&&pw.walls.some(w=>u>w.u0-.04&&u<w.u1+.04&&v>w.v0-.06&&v<w.v1+.06))&&!r.pos.some(q=>Math.hypot(q.u-u,(q.v-v)*.6)<(edAutoPlace.gap||.045));
+  const add=(k,t,b)=>{for(let g=0;g<400;g++){edAutoPlace.gap=g<150?.034:g<300?.026:.02;const u=.22+rnd()*.72,v=.08+rnd()*.84;if(free(u,v)){r.pos.push({k,t,b,u:+u.toFixed(3),v:+v.toFixed(3)});return}}};
   for(const k in r.mobs){const need=(r.mobs[k]||0)-r.pos.filter(q=>q.k===k&&!q.t&&!q.b).length;for(let i=0;i<need;i++)add(k,0,0)}
   if(j<n-1)for(const k of['piques','brasier']){const need=(r.traps[k]||0)-r.pos.filter(q=>q.k===k&&q.t).length;for(let i=0;i<need;i++)add(k,1,0)}
   if(j===n-1&&!r.pos.some(q=>q.b)){const b=S.my.boss||'boss';for(let g=0;g<60;g++){const u=.7+rnd()*.2,v=.3+rnd()*.4;if(free(u,v)){r.pos.push({k:b,t:0,b:1,u,v});break}}}}
@@ -2900,14 +2913,14 @@ function trapNarrow(k,x,y){if(k==='canon')return false;const R=TRAP_REACH[k]||40
 function edCheck(x,y,snap){const sel=ED.move||ED.sel;if(!sel)return {ok:false};
   if(sel.k==='canon'){if(!snap)return {ok:false,why:'Approche le curseur d\'un mur'};if(ED.room===roomCount()-1)return {ok:false,why:'Pas de pièges dans la salle du trésor'};
     if(G.traps.some(t=>Math.hypot(t.x-snap.x,t.y-snap.y)<60))return {ok:false,why:'Trop près d\'un autre piège'};if(ED.move)return {ok:true};
-    const c=TRAPS.canon;if(trapUsed(ED.room)+c.pts>capT())return {ok:false,why:'Plus de places de pièges'};if(trapCount(ED.room)>=4)return {ok:false,why:'4 pièges au plus par salle'};if(S.hero.gold<c.price)return {ok:false,why:'Pas assez d\'or'};return {ok:true}}const r=S.my.rooms[ED.room],n=roomCount(),B=G.B;
+    const c=TRAPS.canon;if(trapUsed(ED.room)+c.pts>capT())return {ok:false,why:'Plus de places de pièges'};if(trapCount(ED.room)>=MAX_TRAPS)return {ok:false,why:MAX_TRAPS+' pièges au plus par salle'};if(S.hero.gold<c.price)return {ok:false,why:'Pas assez d\'or'};return {ok:true}}const r=S.my.rooms[ED.room],n=roomCount(),B=G.B;
   if(x<B.l+12||x>B.r-12||y<B.t+12||y>B.b-12)return {ok:false,why:'Hors de la salle'};
   if(blockedAt(x,y,sel.t?30:20))return {ok:false,why:'Emplacement occupé par un mur ou un pilier'};
   if(Math.hypot(x-G.start.x,y-G.start.y)<130)return {ok:false,why:'Trop près de l\'entrée'};
   if(sel.t&&G.traps.some(t=>t!==(ED.move&&ED.move.o)&&Math.hypot(t.x-x,t.y-y)<TRAP_GAP))return {ok:false,why:'Trop près d\'un autre piège (laisse de la place pour passer)'};
   if(sel.t&&trapNarrow(sel.k,x,y))return {ok:false,why:'Passage trop étroit : un piège ne peut pas boucher un couloir'};
   if(ED.move||sel.b)return {ok:true};
-  if(sel.t){if(ED.room===n-1)return {ok:false,why:'Pas de pièges dans la salle du trésor'};const c=TRAPS[sel.k];if(trapUsed(ED.room)+c.pts>capT())return {ok:false,why:'Plus de places de pièges'};if(trapCount(ED.room)>=4)return {ok:false,why:'4 pièges au plus par salle'};if(S.hero.gold<c.price)return {ok:false,why:'Pas assez d\'or'};return {ok:true}}
+  if(sel.t){if(ED.room===n-1)return {ok:false,why:'Pas de pièges dans la salle du trésor'};const c=TRAPS[sel.k];if(trapUsed(ED.room)+c.pts>capT())return {ok:false,why:'Plus de places de pièges'};if(trapCount(ED.room)>=MAX_TRAPS)return {ok:false,why:MAX_TRAPS+' pièges au plus par salle'};if(S.hero.gold<c.price)return {ok:false,why:'Pas assez d\'or'};return {ok:true}}
   const c=CREA[sel.k];if(monUsed(ED.room)+c.pts>capacity()+1e-9)return {ok:false,why:'Plus de places de monstres'};if(mobCount(ED.room)>=MAX_MOBS)return {ok:false,why:MAX_MOBS+' monstres au plus par salle'};
   if(sel.k==='poule'&&(r.mobs.poule||0)>=MAX_POULES)return {ok:false,why:MAX_POULES+' poules au plus par salle'};if(S.hero.gold<c.price)return {ok:false,why:'Pas assez d\'or'};return {ok:true}}
 function edDown(e){ED.down={x:e.clientX,y:e.clientY,w:toWorld(e,0),hx:G.hero.x,hy:G.hero.y};ED.drag=false;try{cv.setPointerCapture(e.pointerId)}catch(_){}}
@@ -4871,7 +4884,7 @@ function hudExtra(){const alive=G.enemies.filter(e=>!e.dead),boss=alive.find(e=>
   if(boss){bossInit(boss);HX.fill.style.width=Math.max(0,boss.hp/boss.maxHp*100)+'%';setTxt(H$.castle,'tbt',((boss.bc&&boss.bc.name)||'Gardien du trésor')+(boss.phases>1?` · phase ${boss.phase}/${boss.phases}`:''));const tk=boss.phases>1?boss.phases:0;if(HX.tk!==tk){HX.tk=tk;const par=HX.fill.parentElement;par.style.backgroundImage=tk?`repeating-linear-gradient(90deg,transparent 0 calc(${100/tk}% - 2px),rgba(255,255,255,.75) calc(${100/tk}% - 2px) ${100/tk}%)`:''}}
   else{if(HX.tk){HX.tk=0;HX.fill.parentElement.style.backgroundImage=''}G.roomTotal=Math.max(G.roomTotal||1,alive.length);HX.fill.style.width=(alive.length/G.roomTotal*100)+'%';setTxt(H$.castle,'tbt',`${G.castle.name} (niveau ${G.castle.lvl})`)}
   setTxt(HX.xp,'xp',fmt(G.xpGot));
-  const target=G.castle.rooms.length*40,best=S.best[G.castle.id];setTxt(HX.best,'best',fmtTime(best||target));
+  const target=G.castle.rooms.length*55,best=S.best[G.castle.id];setTxt(HX.best,'best',fmtTime(best||target));
   const st=G.time<(best||target)?3:G.time<(best||target)*1.5?2:1;if(lastHud.st!==st){lastHud.st=st;[...HX.stars].forEach((e,i)=>e.classList.toggle('on',i<st))}
   const cof=G.props.filter(p=>p.k==='coffret'),co=cof.filter(p=>p.open).length,br=G.props.filter(p=>p.k!=='coffret'),bk=br.filter(p=>p.dead).length;
   const ob=`<li class="${G.cleared?'ok':''}">Vider la salle${G.cleared?'':` (${alive.length})`}</li>`+(cof.length?`<li class="${co===cof.length?'ok':''}">Coffrets ${co}/${cof.length}</li>`:'')+(br.length?`<li class="${bk===br.length?'ok':''}">Objets cassés ${bk}/${br.length}</li>`:'')+`<li class="${G.time<target?'ok':''}">Pillage éclair (${fmtTime(target)})</li>`;
@@ -4908,14 +4921,14 @@ function showResults(success,abandon){
     else{title='Test échoué';sub="Ton château reste fermé aux pillards tant que tu ne l'as pas terminé toi-même. Allège-le ou équipe-toi mieux."}}
   else{gold=G.goldGot;items=G.itemsGot.slice();
     if(success){for(const co of G.coins)gold+=co.v;for(const b of G.bags)items.push(b.it);
-      const target=c.rooms.length*40;if(G.time<target){const bonus=Math.round(gold*.25);gold+=bonus;notes.push(['good',`Pillage éclair (moins de ${fmtTime(target)}) : +${bonus} or`])}
+      const target=c.rooms.length*55;if(G.time<target){const bonus=Math.round(gold*.25);gold+=bonus;notes.push(['good',`Pillage éclair (moins de ${fmtTime(target)}) : +${bonus} or`])}
       if(!S.best[c.id]||G.time<S.best[c.id]){if(S.best[c.id])notes.push(['good','Nouveau record de temps !']);S.best[c.id]=Math.round(G.time)}
       S.cleared[c.id]=true;{const cl=heroCl(),i=RIVALS.findIndex(r=>r.id===c.id);if(i>=0&&!cl[c.id]){cl[c.id]=1;const nx=RIVALS[i+1];if(nx)notes.push(['good',`🔓 Nouveau château débloqué : ${nx.name} (niv. ${nx.lvl})`])}}title='Château pillé !';sub=`Tu as vidé le coffre de ${c.name}.`}
     else{gold=gold*.5;title=abandon?'Raid abandonné':'Ton héros est tombé';sub="Tu gardes la moitié de l'or ramassé, l'expérience et les sacs déjà récupérés. Le coffre, lui, reste fermé."}}
   if(fail&&!abandon&&!c.mine&&S.hero.cls!=='recrue'){S.ko=S.ko||{};S.ko[S.hero.cls]=NOW()+KO_MS;notes.push(['bad',`Ton ${CL().name} est blessé : il se repose 10 minutes. Joue un autre héros ou la Recrue en attendant.`])}
   {const tx=[];for(const l in G.seedsGot){const n=Math.round(G.seedsGot[l]*(fail?.5:1));if(n){S.seeds[l]=(S.seeds[l]||0)+n;tx.push(n+' × niv. '+l)}}if(tx.length)notes.push(['good','Graines trouvées : '+tx.join(', ')+". Plante-les dans l'Alchimie."])}if(c.arena)arenaResult(success,notes);if(c.online)onlineRaidEnd(c,success,notes);setTimeout(()=>cloudSave(false),1500);if(!c.mine){const rc=success?c.rooms.length:Math.max(0,G.roomIdx),bpp=bpAdd(rc*10+(success?30:0)+(success&&c.arena?15:0)+(G.kills||0));if(bpp)notes.push(['good',`🎟 Passe de combat : +${bpp} points`])}if(!c.mine){qProg('kills',G.kills);cnt('kills',G.kills);if(G.pal&&success)cnt('palRaids');if(success&&!c.arena){qProg('raids',1);S.stats.raids++}if(success&&c.arena)qProg('arena',1)}gold=Math.round(gold*(1+.06*tr('fortune'))*(S.pals.active==='boulet'?1.1:1));S.hero.gold+=gold;const ups=xp?addXp(xp):0;
-  for(const it of items)S.hero.bag.push(it);
-  if(S.hero.bag.length>BAG_MAX){S.hero.bag.sort((a,b)=>b.value-a.value);const extra=S.hero.bag.splice(BAG_MAX);let sold=0;for(const it of extra)sold+=it.value;S.hero.gold+=sold;notes.push(['',`Sac plein : ${extra.length} objet(s) vendu(s) automatiquement pour ${sold} or.`])}
+  {const acc={n:0,g:0,f:0,fg:0};for(const it of items)bagAdd(it,acc);if(acc.n)notes.push(['',`Vente automatique : ${acc.n} objet(s) vendu(s) pour ${fmt(acc.g)} or.`]);if(acc.f)notes.push(['',`Sac plein : ${acc.f} objet(s) vendu(s) pour ${fmt(acc.fg)} or.`])}
+  if(S.hero.bag.length>bagMax()){S.hero.bag.sort((a,b)=>b.value-a.value);const extra=S.hero.bag.splice(bagMax());let sold=0;for(const it of extra)sold+=it.value;S.hero.gold+=sold;notes.push(['',`Sac plein : ${extra.length} objet(s) vendu(s) automatiquement pour ${sold} or.`])}
   if(ups){notes.push(['good',`Niveau ${S.hero.lvl} atteint ! Attaque, défense et PV augmentent. +${ups} point(s) de talent.`]);setTimeout(sfx.level,200)}
   let def=null;if(!c.mine){def=Math.random()<.5?simulateDefense():null;if(def)pushJournal(def);else if(!S.my.validated)notes.push(['',"Ton château n'est pas validé : teste-le dans « Mon château » pour gagner de l'or quand les pillards échouent."])}
   save();
