@@ -718,15 +718,16 @@ const MOB={
  boss:{hp:520,atk:20,spd:78,r:34,ai:'boss',cd:1.6,xp:80,gold:[30,45],drop:0,ht:84,bc:{name:'Gardien du trésor',slam:1,slamR:150,slamM:2.1,slamEvery:6.5,sum:'gobelin',n:2,sumEvery:12}},
  roigob:{hp:420,atk:16,spd:105,r:28,ai:'boss',cd:1.2,xp:90,gold:[35,50],drop:0,ht:72,bc:{name:'Roi Gobelin',sum:'bombe',n:3,sumEvery:7}},
  liche:{hp:480,atk:18,spd:70,r:30,ai:'boss',cd:1.8,xp:110,gold:[40,55],drop:0,ht:84,bc:{name:'La Liche',fan:2.2,keep:1,sum:'squelette',n:2,sumEvery:11}},
+ colosse:{hp:760,atk:24,spd:64,r:37,ai:'boss',cd:1.8,xp:140,gold:[50,70],drop:0,ht:94,bc:{name:'Colosse de pierre',sum:'golem',n:1,sumEvery:16}},
  titan:{hp:900,atk:26,spd:75,r:38,ai:'boss',cd:1.6,xp:160,gold:[55,80],drop:0,ht:96,bc:{name:'Titan de braise',slam:1,slamR:185,slamM:2.4,slamEvery:5,sum:'bombe',n:2,sumEvery:10}}};
-const BOSSORDER=['boss','roigob','liche','titan'];
-const BOSSES={boss:{n:'Gardien du trésor',lv:1,pw:1,d:'Colosse en armure : onde de choc au sol et renforts de gobelins.'},roigob:{n:'Roi Gobelin',lv:3,pw:1.1,d:'Rapide : lance des gobelins kamikazes par vagues.'},liche:{n:'La Liche',lv:6,pw:1.4,d:'Reste à distance : salves de sorts en éventail, invoque des squelettes.'},titan:{n:'Titan de braise',lv:10,pw:1.8,d:'Onde de choc massive et kamikazes en renfort.'}};
+const BOSSORDER=['boss','roigob','liche','colosse','titan'];
+const BOSSES={boss:{n:'Gardien du trésor',lv:1,pw:1,d:'Colosse en armure : onde de choc au sol et renforts de gobelins.'},roigob:{n:'Roi Gobelin',lv:3,pw:1.1,d:'Rapide : lance des gobelins kamikazes par vagues.'},liche:{n:'La Liche',lv:6,pw:1.4,d:'Reste à distance : salves de sorts en éventail, invoque des squelettes.'},colosse:{n:'Colosse de pierre',lv:8,pw:1.6,d:'Recouvert de roche : se rue sur le pillard et fait trembler le sol à l\'impact.'},titan:{n:'Titan de braise',lv:10,pw:1.8,d:'Onde de choc massive et kamikazes en renfort.'}};
 const isBoss=e=>e.ai==='boss';
 const DTY={phys:{n:'physique',au:'au physique',ic:'⚔',c:'#ffffff'},feu:{n:'feu',au:'au feu',ic:'🔥',c:'#ffa04a'},glace:{n:'glace',au:'à la glace',ic:'❄️',c:'#9ad8ff'},poison:{n:'poison',au:'au poison',ic:'🧪',c:'#8aff6a'},ombre:{n:'ombre',au:'à l\'ombre',ic:'🌑',c:'#c89aff'}};
 const WK={gobelin:{w:['poison'],r:[]},archer:{w:['phys'],r:['poison']},gelee:{w:['feu'],r:['phys']},petite:{w:['feu'],r:['phys']},brute:{w:['poison'],r:['phys']},
  zombie:{w:['feu'],r:['poison']},vaudou:{w:['feu'],r:['ombre']},crane:{w:['glace'],r:['feu']},oeil:{w:['phys'],r:['ombre']},poule:{w:['feu'],r:[]},
  chaman:{w:['phys'],r:['poison']},chauve:{w:['glace'],r:[]},squelette:{w:['phys'],r:['poison']},bombe:{w:['glace'],r:['feu']},sorcier:{w:['phys'],r:['ombre']},golem:{w:['glace'],r:['phys','poison']},
- boss:{w:['poison'],r:['phys']},roigob:{w:['feu'],r:['poison']},liche:{w:['feu'],r:['glace','ombre','poison']},titan:{w:['glace'],r:['feu']}};
+ boss:{w:['poison'],r:['phys']},roigob:{w:['feu'],r:['poison']},liche:{w:['feu'],r:['glace','ombre','poison']},colosse:{w:['glace'],r:['poison']},titan:{w:['glace'],r:['feu']}};
 const typeMult=(k,t)=>{const w=WK[k];if(!w||!t)return 1;return w.w.includes(t)?1.5:w.r.includes(t)?.5:1};
 const wkHTML=k=>{const w=WK[k];if(!w)return '';return `<span class="wk">${w.w.length?`<span class="wkw">Faible : ${w.w.map(t=>DTY[t].ic+' '+DTY[t].n).join(', ')}</span>`:''}${w.r.length?`<span class="wkr">Résiste : ${w.r.map(t=>DTY[t].ic+' '+DTY[t].n).join(', ')}</span>`:''}</span>`};
 const BSK={
@@ -738,6 +739,9 @@ const BSK={
  liche:[{k:'fan',ic:'🌑',n:"Salve d'ombre",d:"Tire des orbes d'ombre en éventail.",up:'+2 orbes tous les 2 niveaux, +12 % de dégâts par niveau'},
    {k:'drain',ic:'🩸',n:'Siphon de vie',d:'Aspire la vie du pillard à distance et se soigne du double.',up:'+25 % de vol de vie, plus fréquent par niveau'},
    {k:'sum',ic:'💀',n:'Lever les morts',d:'Relève des squelettes guerriers à ses côtés.',up:'+1 squelette tous les 2 niveaux, 8 % plus fréquent par niveau'}],
+ colosse:[{k:'dash',ic:'🪨',n:'Ruée de pierre',d:'Prend son élan, fonce sur le pillard et déclenche une onde de choc à l\'impact (dégâts de zone).',up:'+15 % de dégâts et de rayon, plus fréquente par niveau'},
+   {k:'shield',ic:'⛰️',n:'Peau de roche',d:'Se recouvre de pierre : les dégâts reçus sont fortement réduits pendant quelques secondes.',up:'Bloque 6 % de plus et dure 0,4 s de plus par niveau'},
+   {k:'sum',ic:'🗿',n:'Rochers vivants',d:'Fait surgir un golem de pierre à ses côtés.',up:'+1 golem tous les 2 niveaux, 8 % plus fréquent par niveau'}],
  titan:[{k:'slam',ic:'🌋',n:'Séisme de braise',d:'Onde de choc massive autour de lui.',up:'+10 % de rayon, +15 % de dégâts et 8 % plus fréquente par niveau'},
    {k:'fire',ic:'☄️',n:'Pluie de braise',d:'Fait tomber des boules de feu sur le pillard (zones signalées au sol).',up:'+1 boule de feu et +15 % de dégâts par niveau'},
    {k:'sum',ic:'🔥',n:'Kamikazes de feu',d:'Appelle des gobelins kamikazes.',up:'+1 kamikaze tous les 2 niveaux, 8 % plus fréquent par niveau'}]};
@@ -749,6 +753,7 @@ const PHASES=[{gl:1,n:'Éveil',ic:'🌙',d:'Le combat commence normalement.'},
 const ULT={boss:{n:'Rempart vivant',d:'Carapace permanente (−35 % de dégâts reçus) et ondes de choc deux fois plus fréquentes.'},
  roigob:{n:'Ruée sans fin',d:'Enchaîne les charges royales presque sans pause.'},
  liche:{n:"Nova d'ombre",d:"Projette un cercle de 12 orbes d'ombre toutes les 6 secondes."},
+ colosse:{n:'Avalanche',d:'Enchaîne les ruées de pierre presque sans pause, chacune suivie d\'une onde de choc.'},
  titan:{n:'Cataclysme',d:'Pluie de braise toutes les 4 secondes, avec 2 boules de feu de plus.'}};
 const PH_DUR=3.2,PH_GATHER=2.4;
 const bossGL=k=>mLv(k)+(BSK[k]||[]).reduce((a,x)=>a+bskLv(k,x.k)-1,0);
@@ -784,14 +789,25 @@ const RIVALS=[
  {id:'ferme',name:'La Ferme Abandonnée',owner:'du Fermier Grincheux',lvl:1,theme:2,mix:['poule','gobelin'],traps:[],rooms:2,bossHp:.3,fixed:[{mobs:['poule','poule','poule','gobelin','gobelin'],traps:[],lay:'salle'},{mobs:['gobelin','poule','poule','boss'],traps:[],lay:'ouverte'}]},
  {id:'moulin',name:'Le Moulin Grinçant',owner:'du Baron Grisemine',lvl:2,theme:0,mix:['gobelin','gobelin','archer','gelee'],traps:['piques'],rooms:3,bossHp:.38,fixed:[{mobs:['gobelin','gobelin','archer','poule','poule'],traps:[],lay:'salle'},{mobs:['gobelin','gobelin','gelee','archer'],traps:['piques'],lay:'antichambre'},{mobs:['gobelin','archer','boss'],traps:[],lay:'ouverte'}]},
  {id:'tour',name:'La Tour aux Pervenches',owner:'de Dame Ortie',lvl:3,theme:1,mix:['archer','chaman','gelee','gobelin'],traps:['brasier','piques'],rooms:3,bossHp:.5},
+ {id:'clairiere',nw:1,name:'Le Fort de la Clairière',owner:'du Capitaine Mousse',lvl:4,theme:5,mix:['gobelin','archer','vaudou','gelee'],traps:['piques','glu'],rooms:3,bossHp:.6},
  {id:'bastion',name:'Le Bastion des Crocs',owner:'de Grokk le Velu',lvl:5,theme:2,mix:['brute','gobelin','gobelin','archer'],traps:['canon','piques'],rooms:4,bossHp:.7},
+ {id:'marais',nw:1,name:'Le Manoir des Marais',owner:'de la Veuve Brume',lvl:6,theme:2,mix:['zombie','gelee','archer','chaman'],traps:['gaz','piques','glu'],rooms:4,bossHp:.8},
  {id:'cendre',name:'La Forteresse de Cendrefer',owner:'de Lord Cendrefer',lvl:8,theme:3,mix:['brute','chaman','archer','gelee'],traps:['brasier','canon','piques','scie'],rooms:4},
+ {id:'rocher',nw:1,name:'Le Nid du Rocher Noir',owner:'du Seigneur Corbac',lvl:10,theme:3,mix:['crane','brute','archer','chauve'],traps:['canon','scie','piques'],rooms:4},
  {id:'abime',name:"Le Gouffre d'Obsidienne",owner:'de la Reine Sans-Nom',lvl:12,theme:4,mix:['brute','chaman','archer','gelee','gobelin'],traps:['brasier','canon','piques','gaz','glu'],rooms:5},
  {id:'serre',name:'La Serre des Épines',owner:'de Dame Ronce',lvl:15,theme:2,mix:['brute','chaman','archer','gelee'],traps:['brasier','canon','piques','scie','glu'],rooms:5},
  {id:'givre',name:'Le Donjon de Givrefer',owner:'du Roi Frimas',lvl:18,theme:4,mix:['chaman','archer','brute','gelee','gobelin'],traps:['brasier','canon','piques','gaz','ressort'],rooms:5},
+ {id:'catacombes',nw:1,name:'Les Catacombes Hurlantes',owner:'du Nécromant Vesper',lvl:20,theme:4,mix:['squelette','zombie','sorcier','chaman'],traps:['gaz','piques','flamme','glu'],rooms:5},
  {id:'forge',name:'La Forge des Damnés',owner:'de Maître Ardent',lvl:22,theme:3,mix:['brute','brute','chaman','archer'],traps:['brasier','canon','piques','scie','flamme','ressort'],rooms:6},
+ {id:'sable',nw:1,name:'La Pyramide des Sables',owner:'du Pharaon Sekhem',lvl:24,theme:5,mix:['squelette','oeil','brute','bombe'],traps:['scie','flamme','piques','ressort'],rooms:6},
  {id:'azur',name:"La Citadelle d'Azur",owner:'de la Régente Nuée',lvl:26,theme:1,mix:['chaman','archer','brute','gelee'],traps:['canon','brasier','piques','flamme','gaz','glu'],rooms:6},
- {id:'trone',name:'Le Trône des Mille Coffres',owner:'du Roi-Dragon',lvl:30,theme:0,mix:['brute','chaman','archer','gelee','gobelin'],traps:['brasier','canon','piques','scie','flamme','ressort','gaz'],rooms:6}];
+ {id:'orage',nw:1,name:'Le Pic des Orages',owner:'de la Sorcière Tempête',lvl:28,theme:1,mix:['sorcier','oeil','chauve','golem'],traps:['canon','ressort','glu','flamme'],rooms:6},
+ {id:'trone',name:'Le Trône des Mille Coffres',owner:'du Roi-Dragon',lvl:30,theme:0,mix:['brute','chaman','archer','gelee','gobelin'],traps:['brasier','canon','piques','scie','flamme','ressort','gaz'],rooms:6},
+ {id:'englouti',name:'Le Sanctuaire Englouti',owner:'du Léviathan',lvl:34,theme:4,mix:['golem','sorcier','oeil','crane','gelee'],traps:['glu','gaz','canon','flamme','piques','scie'],rooms:6},
+ {id:'basalte',name:'La Couronne de Basalte',owner:"de l'Empereur Calciné",lvl:38,theme:3,mix:['golem','crane','brute','bombe','chaman'],traps:['brasier','flamme','scie','canon','ressort','piques'],rooms:6},
+ {id:'astral',name:"L'Observatoire Astral",owner:"de l'Archimage Sélène",lvl:42,theme:1,mix:['sorcier','oeil','golem','squelette','chaman'],traps:['canon','glu','gaz','ressort','flamme','scie'],rooms:6},
+ {id:'ossuaire',name:"L'Ossuaire Éternel",owner:'de la Liche Suprême',lvl:46,theme:4,mix:['squelette','zombie','sorcier','golem','crane'],traps:['gaz','piques','scie','flamme','glu','ressort','canon'],rooms:6},
+ {id:'nuees',name:"Le Palais des Nuées d'Or",owner:"de l'Empereur Céleste",lvl:50,theme:0,mix:['golem','sorcier','oeil','crane','brute','chaman'],traps:['brasier','canon','piques','scie','flamme','ressort','gaz','glu'],rooms:6}];
 const RAIDERS=['Hugo la Fronde','Berthe Main-Leste','Sire Gaspard','Mila des Marais','Rodolphe le Rusé','Agathe Coupe-Bourse','Fulbert le Têtu','Isaure aux Dagues','Le Comte Pâquerette','Yvon Pied-Léger'];
 function castleArt(th){
   return `<svg viewBox="0 0 260 140" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -918,7 +934,7 @@ const xpNeed=l=>Math.round(60*Math.pow(l,1.5));
 function heroStats(){
   const l=S.hero.lvl,s={atk:10+2.2*l,hp:100+11*l,def:1.5*l,crit:5,furt:0,psn:0};
   for(const k of SLOTS){const it=S.hero.equip[k];if(it)for(const st in it.stats)s[st]+=it.stats[st]*upMul(it.up)}
-  s.aff={};const vols=[];for(const k of SLOTS){const it=S.hero.equip[k];if(it&&it.aff)for(const a in it.aff){if(a==='vol'){vols.push(it.aff[a]);continue}s.aff[a]=(s.aff[a]||0)+it.aff[a]}}
+  s.aff={};const vols=[];for(const k of SLOTS){const it=S.hero.equip[k];if(it&&it.aff)for(const a in it.aff){if(!AFX[a]||!affOn(a))continue;if(a==='vol'){vols.push(it.aff[a]);continue}s.aff[a]=(s.aff[a]||0)+it.aff[a]}}
   if(vols.length){vols.sort((p,q)=>q-p);s.aff.vol=+vols.reduce((t,v,i)=>t+v*(VOL_DR[i]??.2),0).toFixed(2)}
   const c=CL();s.atk*=c.atk*(1+.04*tr('force'));s.hp*=c.hp*(1+.05*tr('vigueur'));s.def*=c.def*(1+.06*tr('armure'));s.crit+=c.crit+3*tr('precision');if(skCls()==='assassin'){s.furt+=(S.hero.cls==='assassin'?l*1.5:0);s.critF=s.furt*.15;s.crit+=s.critF;s.critD=Math.round(s.furt*.6);s.psnP=Math.round(s.psn+s.furt*.35)}{const mb=mastBonus();s.atk*=1+mb.dmg/100;s.hp*=1+mb.hp/100}{const sc=setEff();if(sc.miroir>=2)s.crit+=8;if(sc.phenix>=2)s.hp*=1.1;if(sc.vampire>=2)s.aff.vol=(s.aff.vol||0)+4;if(sc.tempete>=2)s.atk*=1.08;if(sc.rempart>=2)s.def*=1.15}
   for(const k in s)if(k!=='aff')s[k]=Math.round(s[k]);s.crit=Math.min(75,s.crit);return s;
@@ -935,7 +951,7 @@ function itemName(slot,ri,cls){if(slot==='anneau'||!cls){const [b,g]=pick(BASES.
 const AFX={
  vol:{n:'Vol de vie',ic:'🩸',r:[2,4],f:v=>`${(v*.75).toFixed(1).replace('.',',').replace(',0','')} % des dégâts infligés rendus en PV (assassin ; ${(v*.3).toFixed(1).replace('.',',')} % pour les autres). Rendements décroissants : la 2e pièce avec vol de vie compte à 70 %, la 3e à 50 %, la 4e à 35 %, puis 25 %`},
  brise:{n:'Brise-armure',ic:'🔨',r:[6,12],f:v=>`tes coups affaiblissent l'ennemi : +${v} % de dégâts subis pendant 4 s`},
- necro:{n:'Nécromancie',ic:'💀',r:[5,10],f:v=>`${v} % de chances de relever un squelette allié en tuant un monstre`},
+ necro:{n:'Nécromancie',ic:'💀',r:[5,10],req:{sub:'m:necro',lbl:'Mage nécromancien'},f:v=>`${v} % de chances de relever un squelette allié en tuant un monstre`},
  epines:{n:'Épines',ic:'🌵',r:[8,16],f:v=>`renvoie ${v} % des dégâts reçus au monstre le plus proche`},
  regen:{n:'Régénération',ic:'💚',r:[2,5],f:v=>`récupère ${(v/20).toFixed(2).replace('.',',')} % des PV par seconde (25 % de cet effet en combat)`},
  vitesse:{n:'Célérité',ic:'👟',r:[4,8],f:v=>`+${v} % de vitesse de déplacement`},
@@ -943,11 +959,16 @@ const AFX={
  or:{n:"Chercheur d'or",ic:'💰',r:[6,14],f:v=>`+${v} % d'or ramassé`},
  esquive:{n:'Esquive',ic:'💨',r:[3,7],f:v=>`${v} % de chances d'éviter un coup`},
  flux:{n:'Flux',ic:'🔷',r:[10,20],f:v=>`+${v} % de régénération de mana ou d'énergie`},
- feu:{n:'Embrasement',ic:'🔥',r:[6,12],f:v=>`${v} % de chances d'enflammer l'ennemi (dégâts sur 3 s)`}};
+ feu:{n:'Embrasement',ic:'🔥',r:[6,12],f:v=>`${v} % de chances d'enflammer l'ennemi (dégâts sur 3 s)`},
+ terre:{n:'Éboulis',ic:'🪨',r:[8,15],req:{cls:'mage',lbl:'Mage'},f:v=>`${v} % de chances que ton sort projette des cailloux sur 2 ennemis proches (55 % de l'attaque, les étourdit un instant)`},
+ foudre:{n:'Arc électrique',ic:'⚡',r:[6,12],req:{cls:'mage',lbl:'Mage'},f:v=>`${v} % de chances qu'un éclair rebondisse sur 3 ennemis proches (40 % de l'attaque)`},
+ givre:{n:'Morsure du givre',ic:'❄️',r:[8,16],req:{cls:'mage',lbl:'Mage'},f:v=>`${v} % de chances de geler l'ennemi : fortement ralenti pendant 2 s`}};
+const affOn=(k,h=S.hero)=>{const r=AFX[k]&&AFX[k].req;if(!r)return true;if(r.sub)return h===S.hero&&subKey()===r.sub;if(r.cls)return h.cls===r.cls;return true};
+const affFits=(k,cls)=>{const r=AFX[k].req;if(!r)return true;if(!cls)return false;return r.cls?r.cls===cls:r.sub?r.sub.startsWith('m:')&&cls==='mage':true};
 const AFX_N=[0,1,2,3,5];
-function rollAffixes(ri){const n=ri>=4?5:ri===3?(Math.random()<.5?3:4):AFX_N[ri],keys=Object.keys(AFX).sort(()=>Math.random()-.5).slice(0,n),o={},m=1+.25*ri;
+function rollAffixes(ri,cls){const n=ri>=4?5:ri===3?(Math.random()<.5?3:4):AFX_N[ri],keys=Object.keys(AFX).filter(k=>affFits(k,cls)).sort(()=>Math.random()-.5).slice(0,n),o={},m=1+.25*ri;
   for(const k of keys){const [a,b]=AFX[k].r;o[k]=Math.max(1,Math.round((a+Math.random()*(b-a))*m))}return n?o:null}
-const affRows=it=>(it&&it.myth&&MYTH[it.myth]?`<li class="aff mythl"><span>${MYTH[it.myth].ic} <b>Pouvoir mythique</b> · ${MYTH[it.myth].d}</span></li>`:'')+setRowItem(it)+(it&&it.aff?Object.entries(it.aff).map(([k,v])=>`<li class="aff"><span>${AFX[k].ic} <b>${AFX[k].n}</b> · ${AFX[k].f(v)}</span></li>`).join(''):'')+(it&&it.ench&&it.ench.length?`<li class="aff ench"><span>✨ <b>Enchanté ${it.ench.length}/3</b> · ${it.ench.map(e=>esc(e.txt)).join(' · ')}</span></li>`:'');
+const affRows=it=>(it&&it.myth&&MYTH[it.myth]?`<li class="aff mythl"><span>${MYTH[it.myth].ic} <b>Pouvoir mythique</b> · ${MYTH[it.myth].d}</span></li>`:'')+setRowItem(it)+(it&&it.aff?Object.entries(it.aff).filter(([k])=>AFX[k]).map(([k,v])=>{const rq=AFX[k].req,off=rq&&!affOn(k);return `<li class="aff" ${off?'style="opacity:.5"':''}><span>${AFX[k].ic} <b>${AFX[k].n}</b> · ${AFX[k].f(v)}${rq?` <small style="color:${off?'#ff9a7a':'#9ad8ff'};font-weight:800">(${rq.lbl} uniquement${off?' : inactif':''})</small>`:''}</span></li>`}).join(''):'')+(it&&it.ench&&it.ench.length?`<li class="aff ench"><span>✨ <b>Enchanté ${it.ench.length}/3</b> · ${it.ench.map(e=>esc(e.txt)).join(' · ')}</span></li>`:'');
 const canUse=(it,cls=S.hero.cls)=>!it.cls||it.cls===cls||cls==='recrue';
 
 /* ===== Ensembles d'équipement : 2 pièces = petit bonus, 4 pièces = pouvoir unique ===== */
@@ -1002,7 +1023,7 @@ function genItem(L,luck=0,slot,cls){
   if(slot==='bottes'){st.hp=Math.round((6+3*L)*m);st.def=Math.round((1+.5*L)*m)}
   if(cls==='assassin'&&slot!=='anneau'){st.furt=Math.round(({arme:1.2,gants:1,bottes:1.1,casque:.9,armure:.8}[slot]||1)*(2+.9*L)*m);if(slot==='arme'||slot==='gants')st.psn=Math.round((2+.7*L)*m)}
   if(ri>=2){const ex=pick(['atk','def','hp','crit']);const add={atk:1+.8*L,def:1+.6*L,hp:4+2.6*L,crit:2}[ex]*m*.6;st[ex]=(st[ex]||0)+Math.max(1,Math.round(add))}
-  if(slot==='arme'&&cls==='mage'){st.atk=Math.round(st.atk*1.05)}const nm=itemName(slot,ri,cls),it={id:S.nextId++,slot,r:R.k,ri,lvl:L,name:nm.name,stats:st,value:Math.round((6+L*4)*R.m*R.m)};const af=rollAffixes(ri);if(af){it.aff=af;it.value=Math.round(it.value*(1+.15*Object.keys(af).length))}if(cls){it.cls=cls;it.base=nm.base}it.v=Math.floor(Math.random()*1e9);
+  if(slot==='arme'&&cls==='mage'){st.atk=Math.round(st.atk*1.05)}const nm=itemName(slot,ri,cls),it={id:S.nextId++,slot,r:R.k,ri,lvl:L,name:nm.name,stats:st,value:Math.round((6+L*4)*R.m*R.m)};const af=rollAffixes(ri,cls);if(af){it.aff=af;it.value=Math.round(it.value*(1+.15*Object.keys(af).length))}if(cls){it.cls=cls;it.base=nm.base}it.v=Math.floor(Math.random()*1e9);
   if(ri>=2&&SET_SLOTS.includes(slot)&&Math.random()<.05){const k=pick(Object.keys(SETS));it.set=k;makeUnique(it);const bn=slot==='anneau'?pick(BASES.anneau)[0]:(CBASE[cls][slot].find(x=>x[2]===it.base)||CBASE[cls][slot][0])[0];it.name=`${bn} ${SETS[k].n}`;it.value=Math.round(it.value*1.5)}
   return it;
 }
@@ -1010,7 +1031,7 @@ function genItem(L,luck=0,slot,cls){
 function subKey(){if(SUB())return SUB();if(S.hero.cls==='mage'&&MAGE_REQ[S.mageNova])return 'm:'+S.mageNova;return null}
 function subName(k){return k.startsWith('m:')?MAGE_REQ[k.slice(2)].n:SUBS[k].n}
 const MAST_MAX=50,PRES_MAX=10,MS_REQ=[1,4,10,20,32],mNeed=l=>Math.round(40*Math.pow(l,1.35));
-function subLvO(k){S.hero.subLv=S.hero.subLv||{};let o=S.hero.subLv[k];if(!o){const sp=k===subKey()?spentTP():0;o=S.hero.subLv[k]={lvl:clamp(sp+1,1,Math.min(MAST_MAX,S.hero.lvl)),xp:0}}
+function subLvO(k){S.hero.subLv=S.hero.subLv||{};let o=S.hero.subLv[k];if(!o){o=S.hero.subLv[k]={lvl:1,xp:0,best:1,pr:0}}
   if(o.v!==2){o.lvl=Math.min(o.lvl,MAST_MAX);o.best=Math.max(o.best||0,o.lvl);o.pr=o.pr||0;o.xp=Math.min(o.xp||0,mNeed(o.lvl)-1);o.v=2}return o}
 const mastCap=()=>Math.min(MAST_MAX,S.hero.lvl);
 function effLvl(){const k=subKey();return k?Math.min(S.hero.lvl,subLvO(k).best):S.hero.lvl}
@@ -1225,7 +1246,7 @@ const STYLES=[
  {k:'braise',n:'Forteresse de braise',price:800,cond:{key:'arena',goal:3,label:'gagner 3 matchs en matchmaking'},wall:'#7a4a42',roof:'#2e2a36',grass:'#5a3a30',rock:'#3a2a2a',sky:'#8a3a34',deco:'lava'},
  {k:'royal',n:'Palais royal',price:1500,cond:{key:'defs',goal:5,label:'repousser 5 raids'},wall:'#f2e6c0',roof:'#8a3ce0',grass:'#6cc07a',rock:'#a89a7a',sky:'#5560c8',deco:'gold'}];
 const styleOpen=x=>S.stylesOwn[x.k]||(x.cond&&S.stats[x.cond.key]>=x.cond.goal);
-const MOBCOL={zombie:'#9aae7a',vaudou:'#d8b47a',crane:'#f2e8d0',oeil:'#8fa83a',poule:'#ffffff',chauve:'#8a6ad0',squelette:'#e8e2d0',bombe:'#ff7a2a',sorcier:'#4a3a9a',golem:'#8a8f9a',gobelin:'#5fbf4a',archer:'#b07a3a',gelee:'#4ad0c8',brute:'#d24a3a',chaman:'#9a5ae0'};
+const MOBCOL={colosse:'#6e5c4c',zombie:'#9aae7a',vaudou:'#d8b47a',crane:'#f2e8d0',oeil:'#8fa83a',poule:'#ffffff',chauve:'#8a6ad0',squelette:'#e8e2d0',bombe:'#ff7a2a',sorcier:'#4a3a9a',golem:'#8a8f9a',gobelin:'#5fbf4a',archer:'#b07a3a',gelee:'#4ad0c8',brute:'#d24a3a',chaman:'#9a5ae0'};
 function viewStyles(){
   return `<div class="frame" style="padding:0;overflow:hidden"><div id="c3d" style="height:340px;background:#1d3b72;touch-action:pan-y">${window.THREE?'':'<p class="empty" style="padding:20px">Le moteur 3D n\'a pas pu se charger.</p>'}</div></div>
   <p class="sub" style="margin:0">Aperçu 3D en direct : une tour par salle (plus haute quand elle est bien défendue), tes monstres et pièges placés, et un donjon qui grandit avec le niveau. Glisse pour tourner.</p>
@@ -1516,7 +1537,7 @@ function viewPlan(i){const pal=planPalette(i),sel=planSel[i];
   <div class="bar" style="gap:5px">${pal.length?pal.map((it,j)=>`<button class="btn ghost ${sel===j?'on':''}" data-act="planPick" data-room="${i}" data-j="${j}" style="${sel===j?'color:#3a1d02;background:linear-gradient(180deg,#ffe07a,var(--gold));':''}min-height:30px;font-size:12px">${esc(it.name)} ${it.placed}/${it.max}</button>`).join(''):'<span class="sub" style="margin:0">Ajoute des monstres ou des pièges pour les placer sur le plan.</span>'}
   ${(S.my.rooms[i].pos||[]).length?`<button class="btn ghost" data-act="planClear" data-room="${i}" style="min-height:30px;font-size:12px">Tout replacer au hasard</button>`:''}</div>
   <p class="sub" style="margin:0;font-size:12px">Choisis un élément puis clique sur le plan pour le poser ; clique sur un repère pour le retirer. Les éléments non placés apparaissent au hasard. Entrée à gauche, sortie à droite.</p></div>`}
-const PLC={zombie:'#9aae7a',vaudou:'#d8b47a',crane:'#f2e8d0',oeil:'#8fa83a',gobelin:'#5fbf4a',archer:'#e8dcc0',gelee:'#4ad0c8',brute:'#d24a3a',chaman:'#9a5ae0',poule:'#ffffff',chauve:'#8a6ad0',squelette:'#c8c8d8',bombe:'#ff7a2a',sorcier:'#6a4ac0',golem:'#8a8f9a',piques:'#c0c4cc',brasier:'#ff8a1e',scie:'#e8eaf0',glu:'#7aba3a',gaz:'#a050d0',flamme:'#ff5a1a',ressort:'#ffc23a'};
+const PLC={colosse:'#6e5c4c',zombie:'#9aae7a',vaudou:'#d8b47a',crane:'#f2e8d0',oeil:'#8fa83a',gobelin:'#5fbf4a',archer:'#e8dcc0',gelee:'#4ad0c8',brute:'#d24a3a',chaman:'#9a5ae0',poule:'#ffffff',chauve:'#8a6ad0',squelette:'#c8c8d8',bombe:'#ff7a2a',sorcier:'#6a4ac0',golem:'#8a8f9a',piques:'#c0c4cc',brasier:'#ff8a1e',scie:'#e8eaf0',glu:'#7aba3a',gaz:'#a050d0',flamme:'#ff5a1a',ressort:'#ffc23a'};
 function drawPlans(){document.querySelectorAll('canvas.plancv').forEach(cv=>{const i=+cv.dataset.plan,c=cv.getContext('2d'),W=cv.width,H=cv.height,pw=planWalls(i),r=S.my.rooms[i],n=roomCount();
   c.clearRect(0,0,W,H);c.fillStyle='#4a5468';c.fillRect(0,0,W,H);
   c.strokeStyle='rgba(255,255,255,.06)';for(let x=0;x<W;x+=22){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke()}for(let y=0;y<H;y+=22){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke()}
@@ -1754,7 +1775,7 @@ function pickIsles(keep){const r=botR(),cur=(S.isles||[]).filter(i=>keep!=null&&
   // l'île gardée reste à sa place, les autres se redistribuent
   if(keep!=null&&S.isles){const pos=S.isles.indexOf(keep),rest=out.filter(i=>i!==keep).sort(()=>Math.random()-.5);const res=[];for(let k=0;k<5;k++)res.push(k===pos?keep:rest.pop());S.isles=res.filter(v=>v!=null)}else S.isles=out.sort(()=>Math.random()-.5);
   if(!S.isles.includes(S.isleSel))S.isleSel=null;save()}
-function drawIsles(c,t,sel){
+function drawIsles(c,t,sel,LST){LST=LST||(S.isles||[]).map(bi=>BOTS[bi]?{k:bi,sd:bi,theme:BOTS[bi].theme,cls:BOTS[bi].cls}:null);
   const r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)))};
   const sky=['#5a2a3a','#7a3438','#9c4636','#bd5a32','#d8762e','#e8952e','#f0b03a','#f5c95a','#f8db82','#fbe7a8'];
   sky.forEach((col,i)=>{r(0,i*20,IW,20,col);if(i)for(let x=(i%2);x<IW;x+=2)r(x,i*20,1,1,sky[i-1])});
@@ -1765,7 +1786,7 @@ function drawIsles(c,t,sel){
   // îlots lointains
   for(let i=0;i<5;i++){const x=20+i*85+(i%2)*20,y=30+(i*37)%50,b=Math.sin(t/1600+i)*1.5;r(x,y+b,14,3,'#a4583e');r(x+3,y+3+b,8,3,'#8a4632');r(x+5,y+6+b,4,3,'#8a4632');r(x+4,y-7+b,3,7,'#b8704e');r(x+8,y-5+b,2,5,'#b8704e')}
   // îles
-  (S.isles||[]).forEach((bi,k)=>{const P=ISL[k];if(!P||!BOTS[bi])return;const s=P.s,bob=Math.sin(t/900+k*1.7)*2,cx=P.x,cy=P.y+bob,w=Math.round(72*s),b=BOTS[bi],th=THEMES[b.theme%THEMES.length],rng=mulberry32(bi*7919+11),on=sel===bi;
+  LST.forEach((o,k)=>{const P=ISL[k];if(!P||!o)return;const bi=o.sd,s=P.s,bob=Math.sin(t/900+k*1.7)*2,cx=P.x,cy=P.y+bob,w=Math.round(72*s),b=o,th=THEMES[b.theme%THEMES.length],rng=mulberry32(bi*7919+11),on=sel===o.k;
     if(on){c.fillStyle='rgba(255,236,150,.25)';c.beginPath();c.ellipse(cx,cy-8,w*.75,w*.65,0,0,7);c.fill()}
     // dessous rocheux et cristaux
     for(let yy=0;yy<Math.round(46*s);yy++){const ww=w*(1-yy/(46*s))*(.9+.1*Math.sin(yy*.7+bi));r(cx-ww/2+Math.sin(yy*.5+bi)*2,cy+yy,ww,1,yy%5===0?'#7a4430':yy<4?'#b06a44':'#94553a')}
@@ -1790,9 +1811,10 @@ function drawIsles(c,t,sel){
   // héros vu de dos
   const hx=px+22,hy=py-16;r(hx-3,hy-14,7,10,'#3a8a4a');r(hx-2,hy-18,5,5,'#2f6a3a');r(hx-3,hy-4,3,4,'#2a2a3a');r(hx+1,hy-4,3,4,'#2a2a3a');r(hx+5,hy-24,1,22,'#5a3a22');r(hx+3,hy-26,5,4,'#c8d4e6')}
 const ISC={raf:0};
-function mountIsles(){const cv=$('#isleCv');if(!cv)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
-  const loop=()=>{if(!cv.isConnected||tab!=='arene'){ISC.raf=0;return}ISC.raf=requestAnimationFrame(loop);if(G.active)return;drawIsles(c,performance.now(),S.isleSel)};
-  drawIsles(c,performance.now(),S.isleSel);cancelAnimationFrame(ISC.raf);ISC.raf=requestAnimationFrame(loop)}
+function mountIsles(){const on=tab==='online',cv=$(on?'#oIsleCv':'#isleCv');if(!cv)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;const T=tab;
+  const draw=()=>on?drawIsles(c,performance.now(),S.online&&S.online.isleSel,oIsleList()):drawIsles(c,performance.now(),S.isleSel);
+  const loop=()=>{if(!cv.isConnected||tab!==T){ISC.raf=0;return}ISC.raf=requestAnimationFrame(loop);if(G.active)return;draw()};
+  draw();cancelAnimationFrame(ISC.raf);ISC.raf=requestAnimationFrame(loop)}
 function islesHTML(){if(!S.isles||S.isles.length<5||S.isles.some(i=>!BOTS[i]))pickIsles();const r=botR();
   const ban=S.isles.map((bi,k)=>{const P=ISL[k],b=BOTS[bi],d=islandDiff(bi),w=Math.round(72*P.s);
     return `<button class="isle ${S.isleSel===bi?'on':''} d${d}" data-act="isle" data-i="${bi}" style="left:${(P.x-w*.55)/IW*100}%;top:${(P.y-60*P.s)/IH*100}%;width:${w*1.1/IW*100}%;height:${(100*P.s)/IH*100}%" aria-label="${esc(b.name)}, niveau ${botLvl(bi)}, difficulté ${d} sur 3">
@@ -1872,7 +1894,7 @@ const ENCH_ST={atk:'Attaque',def:'Défense',hp:'Points de vie',crit:'Coup critiq
 const enchCost=(it,t)=>{const n=(it.ench||[]).length;return Math.round((60+(it.lvl||1)*12)*ENCH[t].c*(1+.5*n)*(1-.1*shopLv('ench'))/5)*5};
 function doEnchant(it,t){const E=ENCH[t],pw=E.m*(1+.1*shopLv('ench'))*rand(.85,1.15),perf=Math.random()<(shopLv('ench')>=3?.16:.08),m=pw*(perf?1.5:1);let txt;
   if(Math.random()<.4){const ks=Object.keys(it.stats).filter(k=>it.stats[k]>0);const k=ks.length?pick(ks):'atk';const base=it.stats[k]||Math.max(2,it.lvl);const add=Math.max(1,Math.round(base*.18*m));it.stats[k]=(it.stats[k]||0)+add;txt=`+${add} ${ENCH_ST[k]||k}`}
-  else{const k=pick(Object.keys(AFX)),[a,b]=AFX[k].r,v=Math.max(1,Math.round((a+Math.random()*(b-a))*m*.75));it.aff=it.aff||{};it.aff[k]=(it.aff[k]||0)+v;txt=`${AFX[k].ic} ${AFX[k].n} +${v}`}
+  else{const k=pick(Object.keys(AFX).filter(x=>affFits(x,it.cls))),[a,b]=AFX[k].r,v=Math.max(1,Math.round((a+Math.random()*(b-a))*m*.75));it.aff=it.aff||{};it.aff[k]=(it.aff[k]||0)+v;txt=`${AFX[k].ic} ${AFX[k].n} +${v}`}
   it.ench=it.ench||[];it.ench.push({t,txt,perf});it.value=Math.round(it.value*(1.12+.06*t));return {txt,perf}}
 
 /* ===== Objets mythiques : 5 fragments + l'Artisan légendaire (or + temps de forge) ===== */
@@ -1958,14 +1980,15 @@ function shopPerk(k,l){if(SHOP_ITEMS[k])return [`${SHOP_ITEMS[k].n} objets en ra
   if(k==='pals')return ['Flamèche, Boulet, Tentaculet','+ Givrou et Piquette','+ Chat-Chanceux et Spectrou','+ Phénix (légendaire)'][l];
   return ['Rachat au prix normal','Rachat +10 %','Rachat +20 %','Rachat +30 %'][l]}
 // --- stock des boutiques d'objets (10 min) ---
-function shopItem(k,L,lk=0){const luck=(Math.random()<.18?1:.3)+lk,me=S.hero.cls,mc=me==='recrue'?pick(['chevalier','mage','assassin']):me;
+function shopItem(k,L,lk=0){let it;for(let g=0;g<40;g++){it=shopItem0(k,L,lk);if(it.ri<4&&it.r!=='unique'&&!it.set)return it}RI_FLOOR=0;it=shopItem0(k,L,0);if(it.ri>=4||it.set||it.r==='unique')it=genItem(L,0,it.slot,it.cls);return it}
+function shopItem0(k,L,lk=0){const luck=(Math.random()<.18?1:.3)+lk,me=S.hero.cls,mc=me==='recrue'?pick(['chevalier','mage','assassin']):me;
   if(k==='forge')return genItem(L,luck,'anneau');
   if(k==='armure')return genItem(L,luck,pick(['casque','armure','gants','bottes']),mc);
   if(k==='mage'){if(me==='mage'||me==='recrue')return genItem(L,luck,'arme','mage');return genItem(L,luck+.35,pick(['arme','casque','armure','gants','bottes']),me)}
   return genItem(L,luck,'arme',mc)}
 function genShop(k){const L=S.hero.lvl,lv=shopLv(k),a=[];if(lv>=3){RI_FLOOR=2;const it=shopItem(k,L+2,1.2);RI_FLOOR=0;a.push({it,price:Math.round(it.value*3.4),master:1})}for(let i=0;i<SHOP_ITEMS[k].n+lv;i++){const it=shopItem(k,L+randi(0,2),.22*lv);a.push({it,price:Math.round(it.value*3.2)})}return a}
 function genMarket(){const shops={};for(const k in SHOP_ITEMS)shops[k]=genShop(k);S.market={shops,next:NOW()+6e5,cls:S.hero.cls};S.marketC=S.marketC||{};S.marketC[S.hero.cls]=S.market;save()}
-function mkSync(){S.marketC=S.marketC||{};const cur=S.marketC[S.hero.cls];if(!cur||!cur.shops||NOW()>=cur.next)genMarket();else S.market=cur}
+function mkSync(){S.marketC=S.marketC||{};const cur=S.marketC[S.hero.cls];if(!cur||!cur.shops||NOW()>=cur.next)genMarket();else S.market=cur;const sh=S.market&&S.market.shops;if(sh)for(const k in sh)if(Array.isArray(sh[k]))sh[k]=sh[k].filter(x=>!x||!x.it||(x.it.ri<4&&x.it.r!=='unique'&&!x.it.set))}
 // --- graines : niveau global du joueur, stock par cycle de 24 h (minuit) ---
 const SEED_GL=[1,4,7,11,16],SEED_STOCK=[8,5,3,2,1];
 const seedPrice=l=>Math.round(SEEDP[l-1]*(1-.1*shopLv('herbes')));
@@ -2201,10 +2224,10 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');i
   if(a==='plInfo'){showPlInfo();return}
   if(a==='plOk'){S.plNotice=null;save();$('#modal').hidden=true;renderHub();return}
   if(a==='plGo'){S.plNotice=null;save();$('#modal').hidden=true;tab=b.dataset.tab;sel=null;renderHub();$('#main').scrollTop=0;return}
-  if(a==='knTrain'){const k=b.dataset.k,rq=SUB_REQ[k];if(!SUBS[k]||(SUBS[k].cls||'chevalier')!==S.hero.cls||!rq||subOwned(k)||S.hero.lvl<rq.lvl||S.hero.gold<rq.cost)return;S.hero.gold-=rq.cost;S.hero.subOwn=Object.assign({},S.hero.subOwn,{[k]:true});save();renderHub();renderTop();sfx.level();toast(`🎓 Formation terminée : voie du ${SUBS[k].n} débloquée !`);return}
+  if(a==='knTrain'){const k=b.dataset.k,rq=SUB_REQ[k];if(!SUBS[k]||(SUBS[k].cls||'chevalier')!==S.hero.cls||!rq||subOwned(k)||S.hero.lvl<rq.lvl||S.hero.gold<rq.cost)return;S.hero.gold-=rq.cost;S.hero.subOwn=Object.assign({},S.hero.subOwn,{[k]:true});S.hero.subLv=S.hero.subLv||{};S.hero.subLv[k]={lvl:1,xp:0,best:1,pr:0,v:2};if(S.hero.subData)delete S.hero.subData[k];save();renderHub();renderTop();sfx.level();toast(`🎓 Formation terminée : voie du ${SUBS[k].n} débloquée !`);return}
   if(a==='knSub'){const o0=S.hero.sub||'',n0=b.dataset.k||'';if(!['chevalier','assassin'].includes(S.hero.cls)||(n0&&(!SUBS[n0]||(SUBS[n0].cls||'chevalier')!==S.hero.cls)))return;if(o0===n0||!subOwned(n0))return;S.hero.subData=S.hero.subData||{};S.hero.subData[o0]={tal:S.hero.tal||{},skl:S.hero.skl||{}};const dd=S.hero.subData[n0]||{tal:{},skl:{}};S.hero.tal=Object.assign({},dd.tal);S.hero.skl=Object.assign({},dd.skl);S.hero.sub=n0;save();renderHub();renderTop();toast(S.hero.sub?`Voie du ${SUBS[S.hero.sub].n} choisie !`:(S.hero.cls==='assassin'?'Assassin classique':'Chevalier classique'));return}
   if(a==='skUp'){const n=+b.dataset.n,L=sklv(n),c=SKUP_COST[L];if(L>=5||S.hero.gold<c||effLvl()<skReq(L))return;S.hero.gold-=c;S.hero.skl=Object.assign({},S.hero.skl);S.hero.skl[n]=L+1;save();renderHub();renderTop();sfx.level();toast(`${CL().sk[n-1]} niveau ${L+1} !`);return}
-  if(a==='mageTrain'){const k=b.dataset.k,rq=MAGE_REQ[k];if(S.hero.cls!=='mage'||!rq||mageOwned(k)||S.hero.lvl<rq.lvl||S.hero.gold<rq.cost)return;S.hero.gold-=rq.cost;S.hero.mageOwn=Object.assign({},S.hero.mageOwn,{[k]:true});save();renderHub();renderTop();sfx.level();toast(`🎓 Formation terminée : ${rq.n} débloqué !`);return}
+  if(a==='mageTrain'){const k=b.dataset.k,rq=MAGE_REQ[k];if(S.hero.cls!=='mage'||!rq||mageOwned(k)||S.hero.lvl<rq.lvl||S.hero.gold<rq.cost)return;S.hero.gold-=rq.cost;S.hero.mageOwn=Object.assign({},S.hero.mageOwn,{[k]:true});S.hero.subLv=S.hero.subLv||{};S.hero.subLv['m:'+k]={lvl:1,xp:0,best:1,pr:0,v:2};if(S.hero.subData)delete S.hero.subData['m:'+k];save();renderHub();renderTop();sfx.level();toast(`🎓 Formation terminée : ${rq.n} débloqué !`);return}
   if(a==='mageNova'){const nk=b.dataset.k,ok=S.mageNova||'explo';if(!mageOwned(nk)||nk===ok)return;if(S.hero.cls==='mage'){S.hero.subData=S.hero.subData||{};S.hero.subData['m:'+ok]={tal:S.hero.tal||{},skl:S.hero.skl||{}};const dd=S.hero.subData['m:'+nk]||{tal:{},skl:{}};S.hero.tal=Object.assign({},dd.tal);S.hero.skl=Object.assign({},dd.skl)}S.mageNova=nk;save();renderHub();toast('Sous-classe du mage : '+({explo:'Explosion',aura:'Aura',boule:'Méga-boule',necro:'Nécromancie'}[nk]||nk));return}
   if(a==='mageEl'){if(b.dataset.k==='glace'&&!mageOwned('glace'))return;S.mageEl=b.dataset.k==='glace'?'glace':'feu';save();renderHub();toast(S.mageEl==='glace'?'Élément : glace ❄️':'Élément : feu 🔥');return}
   if(a==='bestF'){bestF=b.dataset.k;renderHub();return}
@@ -2259,6 +2282,8 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');i
   if(a==='talent'){const t=TALENTS.find(x=>x.k===b.dataset.k);if(!t||tpTot()-spentTP()<=0||tr(t.k)>=t.max||(t.req&&tr(t.req[0])<t.req[1]))return;S.hero.tal[t.k]=tr(t.k)+1;save();renderHub();renderTop();sfx.loot()}
   if(a==='resetTal'){const c=50*S.hero.lvl;if(!spentTP()||S.hero.gold<c)return;S.hero.gold-=c;S.hero.tal={};save();renderHub();sfx.coin();toast('Talents réinitialisés')}
   if(a==='reseed'){mm.seed=newSeed();showMatch()}
+  if(a==='oIsle'){const id=b.dataset.id;S.online.isleSel=S.online.isleSel===id?null:id;save();renderHub();sfx.coin();return}
+  if(a==='oReroll'){const c=isleRerollCost();if(S.hero.gold<c||!S.online)return;S.hero.gold-=c;S.online.isleSel=null;oPick(true);save();renderHub();renderTop();return}
   if(a==='isle'){const i=+b.dataset.i;S.isleSel=S.isleSel===i?null:i;if(S.isleSel!=null){mm=Object.assign({},BOTS[i]);mm.lvl=botLvl(i);mm.seed=''}save();renderHub();sfx.coin();return}
   if(a==='isleReroll'){const c=isleRerollCost();if(S.hero.gold<c)return;S.hero.gold-=c;S.isleSel=null;pickIsles();renderHub();renderTop();return}
   if((a==='isleGo'||a==='arenaGo')&&!heroReady())return;
@@ -2304,7 +2329,7 @@ function viewReglages(){const g=GFX(),p=(S.gfx||{}).preset||'auto',mv=S.musVol??
    ${setRow('Ralenti sur les coups forts','hs',[[1,'Oui'],[0,'Non']],g.hs)}
    <p class="sub" style="margin:8px 0 0">Changer un réglage passe en « Personnalisé ».</p></section>${viewTouches()}</div>`}
 document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('setrng')){S[e.target.dataset.k]=(+e.target.value)/100;save()}});
-function renderHub(){if(tab==='touches')tab='reglages';if(tab!=='reglages')rebind=null;if(tab==='marche')mkSync();if(tab==='journal'){S.unread=0;save()}renderTop();$('#main').innerHTML={online:viewOnline,pillage:viewPillage,heros:viewHeros,chateau:viewChateau,journal:viewJournal,marche:viewMarche,touches:viewReglages,reglages:viewReglages,arene:viewArene,alchimie:viewAlchimie,apparence:viewApparence,bestiaire:viewBestiaire,passe:viewPasse}[tab]();if(tab==='chateau'){mountCastle();drawPlans()}if(tab==='apparence'||tab==='heros')mountLook();if(tab==='marche'){mountTown();mountShop()}if(tab==='arene'){arenaTick();mountIsles()}if(tab==='alchimie')mountGarden();if(tab==='passe'){const tk=$('#bptrack'),nx=tk&&tk.querySelector('.bpcol.next')||tk&&tk.querySelector('.bpcol:last-child');if(tk&&nx)tk.scrollLeft=Math.max(0,nx.offsetLeft-tk.clientWidth/2)}}
+function renderHub(){if(tab==='touches')tab='reglages';if(tab!=='reglages')rebind=null;if(tab==='marche')mkSync();if(tab==='journal'){S.unread=0;save()}renderTop();$('#main').innerHTML={online:viewOnline,pillage:viewPillage,heros:viewHeros,chateau:viewChateau,journal:viewJournal,marche:viewMarche,touches:viewReglages,reglages:viewReglages,arene:viewArene,alchimie:viewAlchimie,apparence:viewApparence,bestiaire:viewBestiaire,passe:viewPasse}[tab]();if(tab==='chateau'){mountCastle();drawPlans()}if(tab==='apparence'||tab==='heros')mountLook();if(tab==='marche'){mountTown();mountShop()}if(tab==='arene'){arenaTick();mountIsles()}if(tab==='online')mountIsles();if(tab==='alchimie')mountGarden();if(tab==='passe'){const tk=$('#bptrack'),nx=tk&&tk.querySelector('.bpcol.next')||tk&&tk.querySelector('.bpcol:last-child');if(tk&&nx)tk.scrollLeft=Math.max(0,nx.offsetLeft-tk.clientWidth/2)}}
 
 /* ===== Menu développeur : PC uniquement, Alt+Maj+D, réservé aux comptes en ligne déclarés administrateurs côté serveur (ADMIN_IDS) ===== */
 let DEV_OK=false,DEV_ASK=false;
@@ -2351,8 +2376,8 @@ function devDo(k){const v=id=>{const e=$('#'+id);return e?e.value:null},bag=it=>
 window.addEventListener('keydown',e=>{if(e.altKey&&e.shiftKey&&e.code==='KeyD'&&isPC()){e.preventDefault();devOpen()}},true);
 function devFab(){let f=document.getElementById('devFab');if(!f){f=document.createElement('button');f.id='devFab';f.dataset.act='devOpenBtn';f.textContent='🛠';f.title='Menu développeur';f.setAttribute('aria-label','Menu développeur');f.style.cssText='position:absolute;right:10px;top:50%;z-index:25;width:40px;height:40px;border-radius:50%;border:2px solid #ffcf4a;background:#1a1024cc;color:#fff;font-size:18px;cursor:pointer';$('#raid').appendChild(f)}f.hidden=!DEV_OK||!isPC()}
 /* progression des châteaux : un par un, par héros */
-function heroCl(){if(!S.hero.cl){const cl={};for(const c of RIVALS){if(S.cleared[c.id]&&c.lvl<=S.hero.lvl)cl[c.id]=1;else break}S.hero.cl=cl}return S.hero.cl}
-function rivOpen(i){return i===0||!!heroCl()[RIVALS[i-1].id]}
+function heroCl(){if(!S.hero.cl){const cl={};for(const c of RIVALS){if(S.cleared[c.id]&&c.lvl<=S.hero.lvl)cl[c.id]=1;else if(!c.nw)break}S.hero.cl=cl}return S.hero.cl}
+function rivOpen(i){if(i===0)return true;const cl=heroCl();if(cl[RIVALS[i-1].id]||cl[RIVALS[i].id])return true;/* les châteaux ajoutés en cours de route ne bloquent pas la suite */if(RIVALS[i-1].nw&&!RIVALS[i].nw){for(let j=i-2;j>=0;j--)if(!RIVALS[j].nw)return !!cl[RIVALS[j].id]}return false}
 function viewPillage(){
   let h='<div class="wrap">';if(koLeft(S.hero.cls))h+=`<section class="frame err">🤕 Ton ${CL().name} est blessé : encore <b data-ko="${S.hero.cls}">${fmtKO(koLeft(S.hero.cls))}</b> de repos. Change de héros dans « Héros & butin » — la Recrue est toujours prête.</section>`;
   if(!window.THREE)h+='<section class="frame err">Le moteur 3D n\'a pas pu se charger. Vérifie ta connexion puis recharge la page.</section>';
@@ -2511,7 +2536,7 @@ function onlinePing(){ONL.up=null;oapi('/ping').then(()=>{ONL.up=true}).catch(()
 function onlineApplySync(y){ONL.me=y.me;ONL.events=y.events;ONL.raids=y.raids;if(y.top)ONL.top=y.top;ONL.cloud=y.save||null;ONL.lastTick=NOW();ONL.err='';
   const c=y.claimed||{};if(c.n){if(c.gold){S.hero.gold+=c.gold;renderTop()}const w=c.n-(c.lost||0);ONL.msg=`🛡 ${c.n} attaque${c.n>1?'s':''} sur ton château pendant ton absence : ${w} repoussée${w>1?'s':''}${c.gold?` (+${fmt(c.gold)} or)`:''}.`;toast(ONL.msg);save()}}
 function onlineLoad(force){if(!S.online||!S.online.token||ONL.busy)return;if(!force&&NOW()-ONL.t<20000)return;ONL.t=NOW();ONL.busy++;
-  Promise.all([oapi('/opponents'),oapi('/sync')]).then(([o,y])=>{ONL.opps=o.opponents;onlineApplySync(y);cloudOffer();const bd=$('#oBadge');if(bd)bd.textContent=''})
+  Promise.all([oapi('/opponents'),oapi('/sync')]).then(([o,y])=>{ONL.opps=o.opponents;if(S.online&&S.online.reroll){S.online.reroll=0;oPick(true)}onlineApplySync(y);cloudOffer();const bd=$('#oBadge');if(bd)bd.textContent=''})
   .catch(e=>{ONL.err=e.message}).finally(()=>{ONL.busy--;if(tab==='online')renderHub()})}
 async function onlineAuth(kind){const n=($('#onName')||{}).value||'',p=($('#onPin')||{}).value||'';ONL.err='';ONL.busy++;renderHub();
   try{const d=await oapi('/'+kind,{name:n.trim(),pin:p.trim()});S.online={id:d.id,name:d.name,token:d.token,pubHash:0,pubAt:0};save();toast(kind==='register'?`Bienvenue ${d.name} !`:`Content de te revoir, ${d.name} !`);ONL.busy--;onlineLoad(true)}
@@ -2523,7 +2548,7 @@ async function onlineRaid(id){if(!heroReady())return;if(!window.THREE){toast('Le
   try{const d=await oapi('/raid/start',{target:id});const c=d.castle,o=d.owner||{};ONL.busy--;
     openPrep({id:'p:'+id,name:o.name&&!c.name.includes(o.name)?`${c.name} (${o.name})`:c.name,lvl:c.lvl,theme:0,style:c.style,rooms:c.rooms,mlv:c.mlv,tUp:c.tUp,mine:false,online:{raid:d.raid,owner:o.name,ownerId:id,trophies:o.trophies}})}
   catch(e){ONL.busy--;ONL.err=e.message;renderHub()}}
-function onlineRaidEnd(c,success,notes){const o=c.online;notes.push(['good','🌐 Raid en ligne contre '+esc(o.owner||'?')+' : résultat envoyé au serveur…']);
+function onlineRaidEnd(c,success,notes){if(S.online){S.online.isleSel=null;S.online.reroll=1}const o=c.online;notes.push(['good','🌐 Raid en ligne contre '+esc(o.owner||'?')+' : résultat envoyé au serveur…']);
   oapi('/raid/end',{raid:o.raid,success,rooms:success?c.rooms.length:Math.max(0,G.roomIdx||0),kills:G.kills||0,hero:{cls:S.hero.cls,lvl:S.hero.lvl}})
    .then(d=>{toast(`🏆 ${d.gain>=0?'+':''}${d.gain} trophées (total ${d.trophies})`);ONL.t=0;if(ONL.me)ONL.me.trophies=d.trophies})
    .catch(e=>toast('Raid en ligne : '+e.message))}
@@ -2554,6 +2579,31 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudSave(f
 function onlineTick(){if(tab!=='online'||document.hidden||(G&&G.active)||!S.online||!S.online.token||ONL.busy||ONL.up!==true)return;ONL.busy++;
   oapi('/sync').then(onlineApplySync).catch(()=>{}).finally(()=>{ONL.busy--;if(tab!=='online')return;const ae=document.activeElement;if(ae&&ae.tagName==='INPUT')return;const y=window.scrollY;renderHub();window.scrollTo(0,y)})}
 setInterval(onlineTick,24000);
+
+/* ===== En ligne : 5 adversaires choisis comme en matchmaking ===== */
+const myTroph=()=>(ONL.me&&ONL.me.trophies!=null)?ONL.me.trophies:1000;
+function oDiff(o){const hl=(o.hero&&o.hero.lvl)||S.hero.lvl,sc=(hl-S.hero.lvl)*.5+((o.lvl||1)-S.my.lvl)*.8+((o.trophies||1000)-myTroph())/250;return sc<-1.5?1:sc<2?2:3}
+function oGain(o){const diff=clamp(((o.trophies||1000)-myTroph())/25,-10,10);return {w:Math.round(clamp(20+diff,5,35)),l:Math.round(clamp(12-diff*.5,4,18))}}
+function oPick(force){const L=ONL.opps||[],O=S.online;if(!O)return;const want=Math.min(5,L.length);let cur=force?[]:(O.isles||[]).filter(id=>L.some(o=>o.id===id));
+  if(!force&&cur.length>=want){O.isles=cur;return}
+  const old=force?(O.isles||[]):[],avoid=L.length-old.length>=5?old:[],pool=L.filter(o=>!cur.includes(o.id)&&!avoid.includes(o.id)).map(o=>({o,d:Math.abs((o.trophies||1000)-myTroph())+Math.random()*120})).sort((a,b)=>a.d-b.d).map(x=>x.o);
+  const out=cur.slice();for(const w of[1,2,3]){if(out.length>=want)break;const k=pool.findIndex(o=>oDiff(o)===w);if(k>=0)out.push(pool.splice(k,1)[0].id)}
+  while(out.length<want&&pool.length)out.push(pool.splice(Math.floor(Math.random()*Math.min(6,pool.length)),1)[0].id);
+  O.isles=out.sort(()=>Math.random()-.5);if(!O.isles.includes(O.isleSel))O.isleSel=null;save()}
+const oById=id=>(ONL.opps||[]).find(o=>o.id===id);
+function oIsleList(){return ((S.online&&S.online.isles)||[]).map(id=>{const o=oById(id);if(!o)return null;const h=hashStr(id);return {k:id,sd:h%100000,theme:h%THEMES.length,cls:(o.hero&&o.hero.cls)||'chevalier'}})}
+function oIslesHTML(){const O=S.online;if(!ONL.opps)return '<p class="empty">Chargement…</p>';if(!ONL.opps.length)return '<p class="empty">Aucun autre château publié pour l\'instant. Invite tes amis à jouer !</p>';
+  if(!O.isles||O.isles.some(id=>!oById(id))||O.isles.length<Math.min(5,ONL.opps.length))oPick(false);
+  const ban=O.isles.map((id,k)=>{const P=ISL[k],o=oById(id);if(!P||!o)return '';const d=oDiff(o),w=Math.round(72*P.s),cl=CLASSES[(o.hero&&o.hero.cls)]||null;
+    return `<button class="isle ${O.isleSel===id?'on':''} d${d}" data-act="oIsle" data-id="${esc(id)}" style="left:${(P.x-w*.55)/IW*100}%;top:${(P.y-60*P.s)/IH*100}%;width:${w*1.1/IW*100}%;height:${(100*P.s)/IH*100}%" aria-label="${esc(o.name)}, difficulté ${d} sur 3">
+      <span class="ibn" style="top:64%"><span class="ilv">${(o.hero&&o.hero.lvl)||'?'}</span><span class="itr">${cl?cl.name:'Joueur'}</span><span class="icr">🏆 ${fmt(o.trophies||0)}</span><span class="inm">${esc(o.name)}</span><span class="ist">${[1,2,3].map(q=>`<i class="${q<=d?'on':''}">★</i>`).join('')}</span></span></button>`}).join('');
+  return `<div class="islewrap"><div class="isles"><canvas id="oIsleCv" width="${IW}" height="${IH}"></canvas>${ban}</div></div>`}
+function oIsleInfo(){const id=S.online&&S.online.isleSel,o=id&&oById(id);if(!o)return `<section class="card"><p class="empty" style="margin:0">Clique sur une île pour voir le château de ce joueur.</p></section>`;
+  const d=oDiff(o),g=oGain(o),cl=CLASSES[(o.hero&&o.hero.cls)]||null,pct=(w,n)=>n?Math.round(w/n*100)+' %':'—',dn=(o.defW||0)+(o.defL||0);
+  return `<section class="card isinfo d${d}"><div class="sqh"><h3>${esc(o.name)}</h3>${cl?`<span class="chip">${cl.name} · niv. ${o.hero.lvl}</span>`:''}<span class="chip">Château niv. ${o.lvl||1}</span><span class="ist big">${[1,2,3].map(q=>`<i class="${q<=d?'on':''}">★</i>`).join('')}</span><small style="color:var(--muted);font-weight:800">${['','Facile','Équilibré','Difficile'][d]}</small></div>
+  <div class="istats"><div><b>${fmt(o.trophies||0)}</b><small>trophées</small></div><div><b>${fmt(o.power||0)}</b><small>puissance de défense</small></div><div><b>${o.defW||0} / ${dn}</b><small>défenses réussies (${pct(o.defW||0,dn)})</small></div><div><b class="plus">+${g.w}</b><small>🏆 si tu gagnes</small></div><div><b class="minus">−${g.l}</b><small>🏆 si tu perds</small></div></div>
+  <p class="sub" style="margin:4px 0 0">Ses monstres, ses pièges et leurs améliorations sont ceux qu'il a placés lui-même.</p>
+  <div class="bar"><button class="btn primary" data-act="onRaid" data-id="${esc(o.id)}" ${ONL.busy?'disabled':''}>⚔️ Piller ce château</button></div></section>`}
 function viewOnline(){
   if(ONL.up===null&&!ONL.pinging){ONL.pinging=1;onlinePing();setTimeout(()=>ONL.pinging=0,500)}
   const head=`<div><h2>🌐 En ligne</h2><p class="sub">Publie ton château pour que les autres joueurs le pillent, et pille les leurs. Chaque raid fait gagner ou perdre des 🏆 trophées ; quand ton château repousse un pillard, tu touches de l'or à ta prochaine connexion.</p></div>`;
@@ -2570,12 +2620,12 @@ function viewOnline(){
     <div class="bar" style="margin-top:8px"><button class="btn sm" data-act="cloudSave" ${ONL.saving?'disabled':''}>☁️ Sauvegarder ma partie en ligne</button><button class="btn ghost sm" data-act="cloudAsk" ${ONL.cloud?'':'disabled'}>⤓ Récupérer</button><small class="sub">${ONL.cloud?`Dernière sauvegarde en ligne : ${ago(ONL.cloud.t)} (niveau ${ONL.cloud.lvl})`:'Aucune sauvegarde en ligne'} · automatique toutes les 5 min et après chaque raid</small></div>
     <div class="bar" style="margin-top:8px"><button class="btn ${!S.online.pubAt||pubOld?'primary':''}" data-act="onPub" ${ONL.busy||!S.my.validated?'disabled':''}>📤 ${S.online.pubAt?'Mettre à jour mon château en ligne':'Publier mon château'}</button>
     <small class="sub">${!S.my.validated?'🔒 Teste et valide d\'abord ton château (Mon château → Tester).':S.online.pubAt?`Publié ${fmtAgo(S.online.pubAt)}${pubOld?' · <b style="color:#ffb070">tu as modifié ton château depuis</b>':''}`:'Pas encore publié : personne ne peut t\'attaquer.'}</small></div>${ONL.err?`<p class="onl-err">${esc(ONL.err)}</p>`:''}</section>`;
-  const opps=ONL.opps==null?'<p class="empty">Chargement…</p>':ONL.opps.length?`<div class="mk onl-grid">${ONL.opps.map(o=>`<article class="frame onl-opp"><b>${esc(o.name)}</b><small>🏆 ${fmt(o.trophies)} · château niv. ${o.lvl} · défense ${fmt(o.power)}</small><small>${o.hero?`${CLS_IC[o.hero.cls]?'':''}${(CLASSES[o.hero.cls]||{}).name||''} niv. ${o.hero.lvl}`:''} · défenses ${o.defW||0} ✔ / ${o.defL||0} ✖</small><button class="btn primary" data-act="onRaid" data-id="${esc(o.id)}" ${ONL.busy?'disabled':''}>⚔️ Piller</button></article>`).join('')}</div>`:'<p class="empty">Aucun autre château publié pour l\'instant. Invite tes amis à jouer !</p>';
+  const opps=`<div class="bar" style="margin:0 0 8px"><button class="btn sm" data-act="oReroll" ${S.hero.gold<isleRerollCost()||!(ONL.opps&&ONL.opps.length>5)?'disabled':''}>🌀 Autres adversaires (${isleRerollCost()} or)</button><small class="sub" style="margin:0">Les 5 îles changent aussi après chaque raid.</small></div>${oIslesHTML()}${ONL.opps&&ONL.opps.length?oIsleInfo():''}`;
   const evs=(ONL.events||[]).slice(0,12).map(e=>`<li class="${e.success?'bad':'good'}">${e.success?'❌':'🛡'} <b>${esc(e.by)}</b> ${e.success?`a pillé ton coffre`:`a échoué (salle ${(e.rooms||0)+1})`} · ${e.trophies>=0?'+':''}${e.trophies} 🏆${e.gold?` · +${fmt(e.gold)} or`:''} <small>${ago(e.t)}</small></li>`).join('');
   const rds=(ONL.raids||[]).slice(0,12).map(r=>`<li class="${r.success?'good':'bad'}">${r.success?'💰':'💀'} contre <b>${esc(r.target)}</b> · ${r.trophies>=0?'+':''}${r.trophies} 🏆 <small>${ago(r.t)}</small></li>`).join('');
   const top=(ONL.top||[]).slice(0,20).map((p,i)=>`<li class="${p.id===S.online.id?'meRow':''}"><span>${i+1}.</span><b>${esc(p.name)}</b><span>🏆 ${fmt(p.trophies)}</span></li>`).join('');
   return `<div class="wrap">${head}${mine}
-    <section class="card"><div class="onl-me"><h3 style="margin:0">⚔️ Châteaux à piller</h3><button class="btn ghost sm" data-act="onRefresh" ${ONL.busy?'disabled':''}>↻ Actualiser</button></div><p class="sub" style="margin:4px 0 8px">Des joueurs proches de ton nombre de trophées. Leurs monstres, leurs pièges (et leurs améliorations) sont ceux qu'ils ont placés.</p>${opps}</section>
+    <section class="card"><div class="onl-me"><h3 style="margin:0">⚔️ Châteaux à piller</h3><button class="btn ghost sm" data-act="onRefresh" ${ONL.busy?'disabled':''}>↻ Actualiser</button></div><p class="sub" style="margin:4px 0 8px">Comme en matchmaking : 5 joueurs proches de ton nombre de trophées, avec si possible un adversaire facile ★, un équilibré ★★ et un difficile ★★★.</p>${opps}</section>
     <div class="onl-cols"><section class="card"><h3>🛡 Attaques subies</h3>${evs?`<ul class="onl-list">${evs}</ul>`:'<p class="empty">Personne ne t\'a encore attaqué.</p>'}</section>
     <section class="card"><h3>🗡 Mes raids</h3>${rds?`<ul class="onl-list">${rds}</ul>`:'<p class="empty">Aucun raid en ligne pour l\'instant.</p>'}</section>
     <section class="card"><h3>🏆 Classement <small class="sub" style="font-size:11px">actualisé toutes les 24 s${ONL.lastTick?' · '+new Date(ONL.lastTick).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</small></h3>${top?`<ol class="onl-top">${top}</ol>`:'<p class="empty">…</p>'}</section></div>${srv}</div>`}
@@ -2631,9 +2681,9 @@ function genRivalRooms(def){
   if(def.fixed)return JSON.parse(JSON.stringify(def.fixed));
   const rng=mulberry32(hashStr(def.id+(def.seed?'#'+def.seed:''))),rooms=[];const mixx=def.mix.concat(def.lvl>=2?['vaudou']:[],def.lvl>=3?['zombie']:[],def.lvl>=5?['crane']:[],def.lvl>=8?['oeil']:[],def.lvl>=4?['chauve']:[],def.lvl>=8?['squelette','bombe']:[],def.lvl>=14?['sorcier','golem']:[]);
   for(let i=0;i<def.rooms;i++){
-    const last=i===def.rooms-1,early=def.lvl<6;const lay=early?(last?'ouverte':['salle','couloir','antichambre','ouverte'][Math.floor(rng()*4)]):pickLay(rng,last,i===0);let budget=Math.min(40,Math.round((early?(3.5+1.6*i+def.lvl*.4):(5+2.2*i+def.lvl*.5))*(early?1:LAYOUTS[lay].mob)));if(last)budget=Math.round(budget*.5);
+    const last=i===def.rooms-1,early=def.lvl<6;const lay=early?(last?'ouverte':['salle','couloir','antichambre','ouverte'][Math.floor(rng()*4)]):pickLay(rng,last,i===0);let budget=Math.min(def.lvl>=20?60:40,Math.round((early?(3.5+1.6*i+def.lvl*.4):(5+2.2*i+def.lvl*.5))*(early?1:LAYOUTS[lay].mob)));if(last)budget=Math.round(budget*.5);
     const mobs=[];let g=0;while(budget>0&&g++<60){const k=mixx[Math.floor(rng()*mixx.length)],p=CREA[k].pts;if(p<=budget){mobs.push(k);budget-=p}}
-    const traps=[],tc=last?0:Math.min(3,Math.floor(i*.8+def.lvl/5));for(let j=0;j<tc;j++)traps.push(def.traps[Math.floor(rng()*def.traps.length)]);
+    const traps=[],tc=last?0:Math.min(3+Math.floor(def.lvl/15),Math.floor(i*.8+def.lvl/5));for(let j=0;j<tc;j++)traps.push(def.traps[Math.floor(rng()*def.traps.length)]);
     if(!last&&rng()<.3){const n=1+Math.floor(rng()*4);for(let j=0;j<n;j++)mobs.push('poule')}if(last)mobs.push(pickBoss(def.lvl,rng));rooms.push({mobs,traps,lay});
   }
   return rooms;
@@ -2847,18 +2897,18 @@ document.querySelectorAll('#rbag .rb').forEach(b=>b.addEventListener('click',()=
 /* --- sorts du mage --- */
 function fireBolt(src,tgt,dmg,col,dty){const a=Math.atan2(tgt.y-src.y,tgt.x-src.x),ox=src.x+Math.cos(a)*22,oy=src.y+Math.sin(a)*22;
   G.bolts.push({x:ox,y:oy,h:40,tgt,tx:tgt.x,ty:tgt.y,dmg,col,spd:560,life:1.4,src,dty,basic:NOSK?1:0});fxLight(ox,oy,44,col,2.2,.2);spark(ox,oy,40,6,hexRgb(col),{spd:90,up:60,life:.3,size:8,glow:true,grav:false});sfx.dash&&tone(880,1320,.08,'sine',.035);
-  const rgb=col===0x8ff0ff?'160,240,255':col===0xff8a3a?'255,170,90':'210,170,255';spark(ox,oy,34,8,rgb,{spd:70,up:40,life:.25,glow:true,grav:false,size:6})}
+  const rgb=col===0x9a7a52?'170,130,90':col===0x8ff0ff?'160,240,255':col===0xff8a3a?'255,170,90':'210,170,255';spark(ox,oy,34,8,rgb,{spd:70,up:40,life:.25,glow:true,grav:false,size:6})}
 function updBolts(dt){for(const b of G.bolts){NOSK=b.basic?1:0;b.life-=dt;if(b.tgt&&!b.tgt.dead){b.tx=b.tgt.x;b.ty=b.tgt.y}const dx=b.tx-b.x,dy=b.ty-b.y,d=Math.hypot(dx,dy)||1,st=b.spd*dt;
-    const rgb=b.col===0x8ff0ff?'150,230,255':b.col===0xff8a3a?'255,160,80':'200,160,255';spark(b.x,b.y,b.h,3,rgb,{spd:18,up:12,life:.35,glow:true,grav:false,size:9});
+    const rgb=b.rock?'150,120,85':b.col===0x8ff0ff?'150,230,255':b.col===0xff8a3a?'255,160,80':'200,160,255';spark(b.x,b.y,b.h,3,rgb,{spd:18,up:12,life:.35,glow:true,grav:false,size:9});
     if(d<=st+6||b.life<=0){b.dead=true;if(b.src===G.hero&&G.hero.myth&&G.hero.myth.neant&&(b.bn||0)<2&&b.tgt&&!b.prop&&b.life>0){const hl=(b.hl||[]).concat([b.tgt]),nx=G.enemies.filter(o=>!o.dead&&!hl.includes(o)&&Math.hypot(o.x-b.tx,o.y-b.ty)<280).sort((p,q)=>Math.hypot(p.x-b.tx,p.y-b.ty)-Math.hypot(q.x-b.tx,q.y-b.ty))[0];
       if(nx){const sb=G.bolts.length;fireBolt({x:b.tx,y:b.ty},nx,b.dmg*.6,0xb06aff,b.dty);const nb=G.bolts[sb];if(nb){nb.src=G.hero;nb.bn=(b.bn||0)+1;nb.hl=hl;nb.h=34}}}
-    if(b.prop){if(!b.prop.dead)hitProp(b.prop)}else if(b.tgt&&!b.tgt.dead&&b.life>0){if(b.big)propsAoe(b.tgt.x,b.tgt.y,75);dmgEnemy(b.tgt,b.dmg,b.src===G.hero,0,b.dty);if(b.src===G.hero&&skCls()==='mage'){const RR=b.big?100:72,cx=b.tgt.x,cy=b.tgt.y,ns=G.enemies.filter(o=>!o.dead&&o!==b.tgt&&Math.hypot(o.x-cx,o.y-cy)<RR+o.r).sort((p,q)=>Math.hypot(p.x-cx,p.y-cy)-Math.hypot(q.x-cx,q.y-cy));
+    if(b.prop){if(!b.prop.dead)hitProp(b.prop)}else if(b.tgt&&!b.tgt.dead&&b.life>0){if(b.big)propsAoe(b.tgt.x,b.tgt.y,75);if(b.rock){b.tgt.stun=Math.max(b.tgt.stun||0,isBoss(b.tgt)?.1:.35)}dmgEnemy(b.tgt,b.dmg,b.src===G.hero,0,b.dty);if(b.src===G.hero&&skCls()==='mage'){const RR=b.big?100:72,cx=b.tgt.x,cy=b.tgt.y,ns=G.enemies.filter(o=>!o.dead&&o!==b.tgt&&Math.hypot(o.x-cx,o.y-cy)<RR+o.r).sort((p,q)=>Math.hypot(p.x-cx,p.y-cy)-Math.hypot(q.x-cx,q.y-cy));
       ring(cx,cy,8,RR,.3,b.col);ns.forEach((o,i)=>{const mul=([.65,.5,.4][i]||.35)+(b.big?.05:0);dmgEnemy(o,b.dmg*mul,1,0,b.dty);spark(o.x,o.y,o.ht*.5,4,rgb,{spd:120,up:60,life:.25,glow:true,size:5})})}
       else if(b.big){ring(b.tgt.x,b.tgt.y,10,75,.35,b.col);for(const o of G.enemies)if(!o.dead&&o!==b.tgt&&dist(o,b.tgt)<75+o.r)dmgEnemy(o,b.dmg*.6,1,0,b.dty)}knock(b.tgt,dx/d,dy/d,.1)}spark(b.tx,b.ty,30,12,rgb,{spd:150,up:110,life:.4,glow:true,size:6});spark(b.tx,b.ty,30,8,rgb,{spd:300,up:60,life:.2,glow:true,size:5,streak:true});ring(b.tx,b.ty,6,40,.25,b.col);fxLight(b.tx,b.ty,34,b.col,2.6,.25);continue}
     b.x+=dx/d*st;b.y+=dy/d*st}NOSK=0;G.bolts=G.bolts.filter(b=>!b.dead)}
 /* ================= Mode construction 3D (portail d'invocation) ================= */
 const ED={room:0,tab:'m',sel:null,move:null,pick:null,hover:null,down:null,drag:false};
-const ICO={gobelin:'👺',archer:'🏹',gelee:'🟢',brute:'👹',chaman:'🪶',poule:'🐔',chauve:'🦇',squelette:'💀',bombe:'💣',sorcier:'🧙',golem:'🗿',zombie:'🧟',vaudou:'🪆',crane:'😈',oeil:'👁️',piques:'🔺',canon:'💥',brasier:'🔥',scie:'⚙️',glu:'🕸️',gaz:'🍄',flamme:'🌋',ressort:'🌀',boss:'🛡️',roigob:'👑',liche:'☠️',titan:'🌋'};
+const ICO={gobelin:'👺',archer:'🏹',gelee:'🟢',brute:'👹',chaman:'🪶',poule:'🐔',chauve:'🦇',squelette:'💀',bombe:'💣',sorcier:'🧙',golem:'🗿',colosse:'🪨',zombie:'🧟',vaudou:'🪆',crane:'😈',oeil:'👁️',piques:'🔺',canon:'💥',brasier:'🔥',scie:'⚙️',glu:'🕸️',gaz:'🍄',flamme:'🌋',ressort:'🌀',boss:'🛡️',roigob:'👑',liche:'☠️',titan:'🌋'};
 const ED_CELL=24;
 function edToUV(x,y){const B=G.B;return G.portrait?{u:(B.b-y)/(B.b-B.t),v:(x-B.l)/(B.r-B.l)}:{u:(x-B.l)/(B.r-B.l),v:(y-B.t)/(B.b-B.t)}}
 function edAutoPlace(j){const r=S.my.rooms[j],n=roomCount();if(!Array.isArray(r.pos))r.pos=[];const pw=planWalls(j),rnd=mulberry32(hashStr('auto'+j+':'+NOW()));
@@ -3173,6 +3223,15 @@ function usePotion(){
 function knock(e,ux,uy,str){const m=isBoss(e)?.12:(e.kind==='brute'||e.kind==='golem')?.45:1;e.kx=ux*700*str*m;e.ky=uy*700*str*m}
 function wake(e){e.awake=true;for(const o of G.enemies)if(!o.awake&&!o.dead&&dist(o,e)<230)o.awake=true}
 let NOSK=0;const SKILL_NERF=.75;const VOL_DR=[1,.7,.5,.35,.25,.2];
+let AFLOCK=0;const ROCK={x:0,y:0};
+function mageElem(e,AF){const h=G.hero;if(S.hero.cls!=='mage')return;
+  if(AF.givre&&Math.random()*100<AF.givre){e.slowT=Math.max(e.slowT||0,2);ring(e.x,e.y,6,e.r+22,.35,0x9ad8ff);spark(e.x,e.y,e.ht*.6,8,'170,225,255',{spd:120,up:80,life:.4,glow:true,size:6});if(!e.frT||G.time-e.frT>1.5){e.frT=G.time;addText(e.x,e.y,e.ht+22,'Gelé !','#9ad8ff',16)}}
+  if(AF.terre&&Math.random()*100<AF.terre){const ns=G.enemies.filter(o=>!o.dead&&o!==e&&dist(o,e)<320).sort((p,q)=>dist(p,e)-dist(q,e)).slice(0,2),tg=ns.length?ns:[e];
+    tg.forEach((t,i)=>{ROCK.x=e.x+rand(-20,20);ROCK.y=e.y+rand(-20,20);const sb=G.bolts.length;fireBolt(ROCK,t,h.atk*.55,0x9a7a52,'phys');const b=G.bolts[sb];if(b){b.rock=1;b.h=58+i*10;b.spd=470;b.src={x:ROCK.x,y:ROCK.y}}});
+    spark(e.x,e.y,20,10,'170,130,90',{spd:160,up:220,life:.5,size:7})}
+  if(AF.foudre&&Math.random()*100<AF.foudre){let cur=e;const hit=[e];for(let j=0;j<3;j++){const nx=G.enemies.filter(o=>!o.dead&&!hit.includes(o)&&dist(o,cur)<260).sort((p,q)=>dist(p,cur)-dist(q,cur))[0];if(!nx)break;hit.push(nx);
+      const n=6;for(let q=1;q<=n;q++){const t=q/n;spark(cur.x+(nx.x-cur.x)*t+rand(-8,8),cur.y+(nx.y-cur.y)*t+rand(-8,8),40,1,'150,210,255',{spd:20,up:10,life:.25,glow:true,grav:false,size:7})}
+      AFLOCK=1;try{dmgEnemy(nx,h.atk*.4,1,0,'phys')}finally{AFLOCK=0}fxLight(nx.x,nx.y,40,0x7ad8ff,2,.2);cur=nx}if(hit.length>1)tone(1400,300,.12,'square',.02)}}
 function dmgEnemy(e,amt,byHero,forceCrit,ty){ty=ty||'phys';if(byHero&&!NOSK)amt*=SKILL_NERF;const tm=typeMult(e.kind,ty);
   if(e.dead)return;if(e.phInv>0){if(Math.random()<.3)addText(e.x,e.y,e.ht+8,'Immunisé','#9ad8ff',16);return}const AF=G.hero.aff||{},stl=byHero&&!forceCrit&&G.hero.stealthT>0;if(stl){G.hero.stealthT=0;forceCrit=1;addText(e.x,e.y,e.ht+24,'Coup de l\'ombre !','#c89aff',18)}const crit=forceCrit||Math.random()*100<G.hero.crit+((G.pal&&G.pal.crit)||0),d=amt*rand(.9,1.1)*(crit?2+(byHero?((AF.critd||0)+(G.hero.critD||0))/100:0):1)*(e.brk>0?1+e.brkV/100:1)*(e.shieldT>0?Math.max(.15,.5-.06*((e.sk&&e.sk.shield)||1)):1)*(e.ult&&e.kind==='boss'?.65:1)*tm*(byHero&&S.hero.cls==='assassin'&&e.hp<e.maxHp*.35?1.21:1)*(byHero&&e.mark?1+.04*e.mark:1)*(byHero&&e.dmT>0?1+(e.dmV||0):1);
   const rg=(1+(byHero?bfv('atk'):0))*(G.hero.rageT>0?1.4:1)*(byHero&&G.hero.furyT>0?1.3:1)*(byHero&&G.hero.set4&&G.hero.set4.vampire&&G.hero.hp<G.hero.maxHp*.5?1.2:1);e.hp-=d*rg;if(byHero)G.hero.lastHit=G.time;if(byHero&&bfv('burn')){e.burn=3;e.burnD=G.hero.atk*bfv('burn')}if(byHero)G.dmgTot=(G.dmgTot||0)+d*rg;if(e.immortal&&e.hp<e.maxHp*.25)e.hp=e.maxHp;e.flash=.12;wake(e);addText(e.x+rand(-6,6),e.y,e.ht+8,Math.round(d*rg)+(crit?' !':'')+(tm>1?' ▲':tm<1?' ▼':''),crit?'#ffd34a':tm<1?'#8a94a8':(DTY[ty]||{c:'#fff1c0'}).c,crit?28:tm>1?23:20);
@@ -3185,7 +3244,7 @@ function dmgEnemy(e,amt,byHero,forceCrit,ty){ty=ty||'phys';if(byHero&&!NOSK)amt*
   if(crit&&byHero&&G.hero.myth&&G.hero.myth.nuit)G.hero.cds.dash*=.5;if(crit&&byHero&&e.mark&&G.hero.sub==='ombrelame')G.hero.cds.ult=Math.max(0,(G.hero.cds.ult||0)-.5);
   crit?sfx.crit():sfx.hit();if(crit){G.shake=Math.max(G.shake,.15);hitStop(.055)}
   if(byHero&&skCls()==='assassin'&&ty==='phys')addPsn(e,stl?3:1);
-  if(byHero){const h=G.hero;if(AF.vol&&h.hp>0){{const lv=d*rg*AF.vol/100*(skCls()==='assassin'?1:.4)*.75;G.lsTot=(G.lsTot||0)+Math.min(lv,h.maxHp-h.hp);h.hp=Math.min(h.maxHp,h.hp+lv)}}if(AF.brise){e.brk=4;e.brkV=AF.brise}if(AF.feu&&Math.random()*100<AF.feu){e.burn=3;e.burnD=h.atk*.15}}
+  if(byHero){const h=G.hero;if(AF.vol&&h.hp>0){{const lv=d*rg*AF.vol/100*(skCls()==='assassin'?1:.4)*.75;G.lsTot=(G.lsTot||0)+Math.min(lv,h.maxHp-h.hp);h.hp=Math.min(h.maxHp,h.hp+lv)}}if(AF.brise){e.brk=4;e.brkV=AF.brise}if(AF.feu&&Math.random()*100<AF.feu){e.burn=3;e.burnD=h.atk*.15}if(!AFLOCK)mageElem(e,AF)}
   if(isBoss(e)&&bossHold(e))return;
   if(e.hp<=0){killEnemy(e);if(byHero&&(G.hero.aff||{}).necro&&!G.castle.mine&&Math.random()*100<G.hero.aff.necro&&G.minions.length<3)raiseMinion(e)}
 }
@@ -3320,17 +3379,20 @@ function bossAI(e,d,dt){
       const P=PHASES[e.phase-1];addText(e.x,e.y,e.ht+34,e.phase>=4?(ULT[e.kind]||{n:'ULTIME'}).n.toUpperCase()+' !':P.n.toUpperCase()+' !',e.phase>=4?'#d6a0ff':e.phase>=3?'#ff7a4a':'#ffc24a',32)}
     if(e.phInv<=0){e.phInv=0;e.flash=0}
     return true}
-  if(e.ult){if(e.kind==='boss')e.slamT-=dt;if(e.kind==='roigob')e.chT=Math.min(e.chT??2,.9);if(e.kind==='titan')e.fiT=Math.min(e.fiT??3,4);
+  if(e.ult){if(e.kind==='boss')e.slamT-=dt;if(e.kind==='roigob')e.chT=Math.min(e.chT??2,.9);if(e.kind==='titan')e.fiT=Math.min(e.fiT??3,4);if(e.kind==='colosse')e.daT=Math.min(e.daT??3,1.6);
     if(e.kind==='liche'){e.nvT=(e.nvT??6)-dt;if(e.nvT<=0){e.nvT=8.5;for(let i=0;i<8;i++){const a=i/8*6.283;G.projs.push({x:e.x+Math.cos(a)*(e.r+6),y:e.y+Math.sin(a)*(e.r+6),vx:Math.cos(a)*220,vy:Math.sin(a)*220,r:8,dmg:e.atk*.6,kind:'bolt',life:3})}ring(e.x,e.y,e.r,e.r+90,.4,0xb04aff);addText(e.x,e.y,e.ht+20,"Nova d'ombre !",'#d6a0ff',22)}}}
   if(e.zones&&e.zones.length){for(const z of e.zones){z.t-=dt;if(z.t<=0){z.done=1;ring(z.x,z.y,10,z.r+10,.4,0xff6a1a);spark(z.x,z.y,6,16,'255,130,40',{spd:180,up:220,life:.6,size:7,glow:true});sfx.slam();G.shake=Math.max(G.shake,.25);if(dist(z,h)<z.r+h.r*.4)hurtHero(z.dmg);const a=AL();if(a&&dist(z,a)<z.r+a.r*.4)hurtAlly(z.dmg)}}e.zones=e.zones.filter(z=>!z.done)}
   if(e.shieldT>0){e.shieldT-=dt;e.shFx=(e.shFx||0)-dt;if(e.shFx<=0){e.shFx=.22;ring(e.x,e.y,e.r+4,e.r+18,.28,0x8fc8ff)}}
-  if(e.charge>0){e.charge-=dt;if(e.charge>.42){e.face=Math.atan2(e.chy,e.chx);if(Math.random()<dt*20)spark(e.x,e.y,4,2,'230,200,150',{spd:60,up:50,life:.4,size:6});return true}
+  if(e.dashAoe&&!(e.charge>0)){e.dashAoe=0;const lv=L('dash')||1,R=135*(1+.15*(lv-1)),dm=e.atk*1.7*(1+.15*(lv-1));ring(e.x,e.y,20,R+8,.45,0xc8a070);ring(e.x,e.y,10,R*.6,.35,0xffffff);spark(e.x,e.y,6,34,'160,130,95',{spd:300,up:240,life:.7,size:8});spark(e.x,e.y,6,14,'255,200,120',{spd:220,up:120,life:.4,size:6,glow:true});G.shake=Math.max(G.shake,.7);sfx.slam();e.lunge=.25;
+    if(dist(e,h)<R+h.r*.5){hurtHero(dm);const k=dist(e,h)||1;h.x+=(h.x-e.x)/k*40;h.y+=(h.y-e.y)/k*40;collideB(h)}const a=AL();if(a&&dist(e,a)<R+a.r*.5)hurtAlly(dm);propsAoe&&propsAoe(e.x,e.y,R*.6)}
+  if(e.charge>0){e.charge-=dt;if(e.charge>.42){if(e.dashAoe&&Math.random()<dt*14)spark(e.x,e.y,4,3,'150,120,90',{spd:90,up:90,life:.5,size:7});e.face=Math.atan2(e.chy,e.chx);if(Math.random()<dt*20)spark(e.x,e.y,4,2,'230,200,150',{spd:60,up:50,life:.4,size:6});return true}
     const ox=e.x,oy=e.y;e.x+=e.chx*600*dt;e.y+=e.chy*600*dt;e.mv=.15;collideB(e);if(Math.hypot(e.x-ox,e.y-oy)<1)e.charge=0;
-    if(!e.chHit&&dist(e,h)<e.r+h.r+8){e.chHit=1;hurtHero(e.atk*(1.4+.25*(L('charge')-1)));G.shake=.5;ring(h.x,h.y,8,60,.3,0xffd28a)}{const a=AL();if(a&&!e.chHitA&&dist(e,a)<e.r+a.r+8){e.chHitA=1;hurtAlly(e.atk*(1.4+.25*(L('charge')-1)))}}return true}
+    if(!e.chHit&&dist(e,h)<e.r+h.r+8){e.chHit=1;hurtHero(e.atk*(1.4+.25*((L('charge')||L('dash'))-1)));G.shake=.5;ring(h.x,h.y,8,60,.3,0xffd28a)}{const a=AL();if(a&&!e.chHitA&&dist(e,a)<e.r+a.r+8){e.chHitA=1;hurtAlly(e.atk*(1.4+.25*((L('charge')||L('dash'))-1)))}}return true}
   if(e.slam>0){e.slam-=dt;if(e.slam<=0){const R=(c.slamR||150)*(1+.1*(L('slam')-1));ring(e.x,e.y,30,R+5,.4,0xff7850);spark(e.x,e.y,5,30,'200,170,130',{spd:260,up:160,life:.6,size:7});G.shake=.6;sfx.slam();e.lunge=.25;if(d<R+h.r*.5)hurtHero(e.atk*(c.slamM||2.1)*(1+.15*(L('slam')-1)));const a=AL();if(a&&dist(e,a)<R+a.r*.5)hurtAlly(e.atk*(c.slamM||2.1)*(1+.15*(L('slam')-1)))}return true}
-  e.slamT-=dt;e.sumT-=dt;e.fanT-=dt;e.shT=(e.shT??5)-dt;e.chT=(e.chT??3.5)-dt;e.drT=(e.drT??4)-dt;e.fiT=(e.fiT??4.5)-dt;
+  e.slamT-=dt;e.sumT-=dt;e.fanT-=dt;e.shT=(e.shT??5)-dt;e.chT=(e.chT??3.5)-dt;e.daT=(e.daT??3)-dt;e.drT=(e.drT??4)-dt;e.fiT=(e.fiT??4.5)-dt;
   const see=!G.walls.length||los(e,h);
-  if(L('shield')&&e.shT<=0&&d<320&&!(e.shieldT>0)){e.shT=(14-1.2*(L('shield')-1))*(e.enraged?.75:1);e.shieldT=2+.4*L('shield');addText(e.x,e.y,e.ht+20,'Carapace de fer !','#9ad8ff',22)}
+  if(L('shield')&&e.shT<=0&&d<320&&!(e.shieldT>0)){e.shT=(14-1.2*(L('shield')-1))*(e.enraged?.75:1);e.shieldT=2+.4*L('shield');addText(e.x,e.y,e.ht+20,e.kind==='colosse'?'Peau de roche !':'Carapace de fer !',e.kind==='colosse'?'#e0c090':'#9ad8ff',22)}
+  if(L('dash')&&e.daT<=0&&d>90&&d<560&&see){e.daT=(8-.7*(L('dash')-1))*(e.enraged?.75:1);e.charge=1.0;e.chHit=0;e.chHitA=0;e.dashAoe=1;const k=d||1;e.chx=(h.x-e.x)/k;e.chy=(h.y-e.y)/k;addText(e.x,e.y,e.ht+20,'Ruée de pierre !','#e0c090',22);ring(e.x,e.y,e.r,e.r+40,.5,0xc8a070);return true}
   if(L('charge')&&e.chT<=0&&d>110&&d<480&&see){e.chT=(9-.8*(L('charge')-1))*(e.enraged?.7:1);e.charge=1.02;e.chHit=0;const k=d||1;e.chx=(h.x-e.x)/k;e.chy=(h.y-e.y)/k;addText(e.x,e.y,e.ht+20,'Charge royale !','#ffd28a',22);return true}
   if(L('slam')&&e.slamT<=0&&d<260){e.slam=1;e.slamR=(c.slamR||150)*(1+.1*(L('slam')-1));e.slamT=c.slamEvery*fq('slam');e.wind=0;return true}
   if(L('fan')&&e.fanT<=0&&d<540){e.fanT=(c.fan||2.2)*fq('fan')*1.35;const n=Math.min(5,3+2*Math.floor((L('fan')-1)/2));for(let i=0;i<n;i++){const a=(i-(n-1)/2)*.22;shoot(e,'bolt',250,e.atk*.7*(1+.12*(L('fan')-1)));const p=G.projs[G.projs.length-1],co=Math.cos(a),si=Math.sin(a),vx=p.vx,vy=p.vy;p.vx=vx*co-vy*si;p.vy=vx*si+vy*co}e.lunge=.2;sfx.hit()}
@@ -4063,6 +4125,13 @@ function buildGolem(){
   const mkA=x=>{const A=grp(x,2.05,0);A.add(PO(GEO.ico,M.stone,[0,-.45,.05],[.28,.42,.28]));A.add(PO(GEO.ico,M.dark,[0,-.95,.25],[.36,.34,.38]));return A};
   const L=mkA(-1.0);body.add(L);L.rotation.set(-.1,0,.12);const arm=mkA(1.0);body.add(arm);
   return {g,body,legL,legR,arm,head,mats:mats(M)}}
+function buildColosse(){const m=buildGolem(),rock=T(0x6e5c4c,{flatShading:true}),dark=T(0x3e342c,{flatShading:true}),glow=ADD(0xffa040,.85);tx(rock,'rock');tx(dark,'rock');
+  for(const [x,y,z,sx,sy,sz] of[[0,2.0,.48,.46,.36,.3],[-.52,1.92,.3,.34,.3,.28],[.52,1.88,.3,.32,.3,.28],[0,1.38,.44,.34,.24,.26],[-.32,2.48,-.05,.34,.26,.3],[.38,2.42,-.12,.3,.24,.28],[0,1.9,-.5,.6,.5,.3]])m.body.add(PO(GEO.ico,rock,[x,y,z],[sx,sy,sz]));
+  for(const s of[-1,1]){m.body.add(PO(GEO.ico,dark,[s*1.02,2.35,0],[.5,.44,.48]));for(let i=0;i<3;i++)m.body.add(P(GEO.cone,rock,[s*(.9+i*.12),2.72+i*.05,-.1+i*.1],[.1,.32,.1],{rot:[0,0,-s*.5]}))}
+  m.body.add(P(GEO.sph,glow,[0,1.78,.62],[.17,.17,.08]));for(const [x,y] of[[-.2,2.1],[.24,1.6],[-.1,1.25]])m.body.add(P(GEO.box,glow,[x,y,.6],[.04,.18,.02],{rot:[0,0,.8]}));
+  for(let i=0;i<4;i++){const a=(i-1.5)*.5;m.head.add(P(GEO.cone,dark,[Math.sin(a)*.2,.3,-.05],[.07,.26,.07],{rot:[0,0,-a*.6]}))}
+  for(const s of[-1,1])m.head.add(P(GEO.box,glow,[s*.13,.02,.3],[.1,.05,.03]));
+  if(m.arm)m.arm.add(PO(GEO.ico,dark,[0,-1.05,.25],[.48,.42,.48]));m.g.scale.setScalar(1.45);const fx=bossFx(m.g,2.2,2.6);m.aura=fx.aura;m.tele=fx.tele;m.tg=fx.tg;return m}
 function buildChaman(){
   const M={robe:T(0x7a52b8),hood:T(0x4f3383),bone:T(0xeee0c2),wood:T(0x7a4d2a),skin:T(0x7cc04a)},orb=BASIC(0x9ff4ff);
   const b=goblinBase({skin:M.skin,dark:M.hood,cloth:M.robe});
@@ -4288,7 +4357,7 @@ function buildCrane(){
   return {g,body,legL,legR,arm:R.a,head,mats:mats(M)}}
 
 const BUILD={squelette:()=>KK.ready&&GFX().mdl&&KK.lib.sk_warrior?kkMob('sk_warrior',{r:'Skeleton_Blade',l:'Skeleton_Shield_Small_A'},.82):buildSquelette(),zombie:buildZombie,vaudou:buildVaudou,oeil:buildOeil,crane:buildCrane,poule:buildPoule,gobelin:buildGobelin,archer:buildArcher,gelee:()=>buildGelee(false),petite:()=>buildGelee(true),brute:buildBrute,chaman:buildChaman,boss:buildBoss,
-  chauve:buildChauve,bombe:buildBombe,sorcier:buildSorcier,golem:buildGolem,roigob:buildRoiGob,liche:()=>{if(!(KK.ready&&GFX().mdl&&KK.lib.sk_mage))return buildLiche();const m=kkMob('sk_mage',{r:'Skeleton_Staff',caster:1},1.6,0x9a7aff);const au=new THREE.Mesh(GEO.sph,ADD(0xa060ff,.25));au.scale.setScalar(2.2);au.position.y=1.6;au.visible=false;m.g.add(au);m.aura=au;return m},titan:buildTitan};
+  chauve:buildChauve,bombe:buildBombe,sorcier:buildSorcier,golem:buildGolem,colosse:buildColosse,roigob:buildRoiGob,liche:()=>{if(!(KK.ready&&GFX().mdl&&KK.lib.sk_mage))return buildLiche();const m=kkMob('sk_mage',{r:'Skeleton_Staff',caster:1},1.6,0x9a7aff);const au=new THREE.Mesh(GEO.sph,ADD(0xa060ff,.25));au.scale.setScalar(2.2);au.position.y=1.6;au.visible=false;m.g.add(au);m.aura=au;return m},titan:buildTitan};
 
 /* --- décor --- */
 function tex(c,rx,ry){const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=4;return t}
@@ -4787,7 +4856,7 @@ function render3D(dt){
   for(const l of G.rloot){const m=track(l,()=>{const g=new THREE.Group(),c=0xffd36a;g.add(part(GEO.sph,BASIC(0xfff1c0),[0,0,0],[.28,.28,.28],{out:false,shadow:false}));g.add(part(GEO.sph,BASIC(c,{transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending}),[0,0,0],[.6,.6,.6],{out:false,shadow:false}));
       const rg=new THREE.Mesh(GEO.ring,BASIC(c,{transparent:true,opacity:.8,depthWrite:false}));rg.rotation.x=-Math.PI/2;rg.position.y=-.9;rg.scale.setScalar(.55);g.add(rg);return {g}});
     m.g.position.set(l.x*U,(l.z*U)+1+Math.sin(G.time*4+l.x)*.12,l.y*U)}
-  for(const b of G.bolts){const m=track(b,o=>{const g=new THREE.Group();g.add(part(GEO.sph,BASIC(0xffffff),[0,0,0],[.3,.3,.3],{out:false,shadow:false}));
+  for(const b of G.bolts){const m=track(b,o=>{const g=new THREE.Group();if(o.rock){g.add(part(GEO.ico,T(0x7a5e40,{flatShading:true}),[0,0,0],[.5,.42,.46],{out:false,shadow:false}));g.add(part(GEO.ico,T(0xa08060,{flatShading:true}),[.2,.15,0],[.22,.2,.2],{out:false,shadow:false}));return {g}}g.add(part(GEO.sph,BASIC(0xffffff),[0,0,0],[.3,.3,.3],{out:false,shadow:false}));
       g.add(part(GEO.sph,BASIC(o.col,{transparent:true,opacity:.85,depthWrite:false,blending:THREE.AdditiveBlending}),[0,0,0],[.58,.58,.58],{out:false,shadow:false}));
       g.add(part(GEO.sph,BASIC(o.col,{transparent:true,opacity:.4,depthWrite:false,blending:THREE.AdditiveBlending}),[0,0,0],[1.15,1.15,1.15],{out:false,shadow:false}));return {g}});
     m.g.position.set(b.x*U,b.h*U,b.y*U);m.g.rotation.y+=dt*8}
