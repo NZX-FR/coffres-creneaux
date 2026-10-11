@@ -174,9 +174,8 @@ export async function handle(req, store, env = {}) {
       const { data } = await readIndex(store);
       const all = Object.values(data.players).filter((p) => p.hasCastle && p.id !== me.id);
       all.sort((a, b) => Math.abs(a.trophies - me.trophies) - Math.abs(b.trophies - me.trophies));
-      const pool = all.slice(0, 16);
-      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-      return json({ opponents: pool.slice(0, 8), me: pubPlayer(me) });
+      // les 24 joueurs les plus proches en trophées : le jeu en choisit 5 (facile, équilibré, difficile), comme en matchmaking
+      return json({ opponents: all.slice(0, 24), me: pubPlayer(me) });
     }
 
     if (path === '/raid/start' && method === 'POST') {
