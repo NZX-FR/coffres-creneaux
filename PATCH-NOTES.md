@@ -1,5 +1,20 @@
 # 📜 Coffres & Créneaux : notes de mise à jour
 
+# Version 109 : Entraînement et fusion
+- 🎯 **Salle d'entraînement** (Héros & butin) : 4 mannequins invincibles pour tester tes builds, avec DPS sur 5 s, DPS moyen, plus gros coup et dégâts totaux. Le dernier mannequin reste à 30 % de PV pour tester les exécutions. **Aucune pénalité** : pas de blessure, potions rendues, entrée et sortie libres.
+- 🔗 **Fusion d'affixe** (Antre de l'enchanteur) : sacrifie un objet du même type et de même qualité qui partage une propriété (ex. deux bâtons avec Coups mortels) : 75 % de sa valeur rejoint l'objet receveur. Coûte des 🔷 fragments runiques et de l'or, et occupe un des 3 emplacements d'enchantement.
+- ✨ **Talents** : une fois l'arbre rempli (39 points), tu ne gagnes plus de points de talent.
+- 👀 **Monstres** : ils te repèrent de plus loin (≈ +40 % de champ de vision).
+- 🪶 **Chaman** : soigne jusqu'à 2 monstres à la fois (35 % de leurs PV), plus souvent et de plus loin.
+- 🐞 Le saignement de l'élément Pierre ne perturbe plus les autres saignements.
+
+# Version 108 : Pierre et pièges
+- 🪤 **Pièges** : les dégâts sont maintenant un **pourcentage des PV max du pillard** (piques 9 %, boulet 7,4 %, scie 6,2 %…), +5 % par niveau de château. Saignements, brûlures et poisons des pièges suivent la même règle.
+- 🔁 **Changer de voie** d'un piège garde son niveau, contre de l'or (le prix dépend de ton niveau de joueur et du niveau du piège).
+- 🪨 **Mage : nouvel élément Pierre** (niv. 11, 2 500 or) : les sorts deviennent des rochers qui font **saigner** (1,5 % des PV max de la cible en 5 s, **cumulable 4 fois**) et étourdissent brièvement.
+- 🐾 **Ménagerie** : tous les compagnons sont affaiblis (environ −35 % sur toutes leurs stats).
+- 💀 **La Liche** est plus grande.
+
 # Version 107 : Rythme et lisibilité
 - 👹 Les monstres attaquent **25 % plus vite**, les boss 11 % plus vite.
 - 🪨 Le **Colosse de pierre** est nettement plus grand.
