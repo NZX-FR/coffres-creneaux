@@ -58,15 +58,15 @@ function cleanCastle(c) {
     style: typeof c.style === 'string' && KEY_RE.test(c.style) ? c.style : 'classique',
     power: clamp(+c.power || 0, 0, 1e7),
     rooms: rooms.map((r) => ({
-      mobs: keys(r.mobs, 40), traps: keys(r.traps, 6),
+      mobs: keys(r.mobs, 60), traps: keys(r.traps, 60),
       lay: typeof r.lay === 'string' && /^[a-zA-Z0-9]{1,20}$/.test(r.lay) ? r.lay : null,
-      pos: (Array.isArray(r.pos) ? r.pos : []).slice(0, 60).map((q) => ({ k: typeof q.k === 'string' && KEY_RE.test(q.k) ? q.k : '', u: clamp(+q.u || 0, 0, 1), v: clamp(+q.v || 0, 0, 1), t: q.t ? 1 : 0, b: q.b ? 1 : 0, n: Array.isArray(q.n) ? q.n.slice(0, 2).map((x) => clamp(+x || 0, -1, 1)) : undefined, inner: q.inner ? 1 : 0 })).filter((q) => q.k),
+      pos: (Array.isArray(r.pos) ? r.pos : []).slice(0, 130).map((q) => ({ k: typeof q.k === 'string' && KEY_RE.test(q.k) ? q.k : '', u: clamp(+q.u || 0, 0, 1), v: clamp(+q.v || 0, 0, 1), t: q.t ? 1 : 0, b: q.b ? 1 : 0, n: Array.isArray(q.n) ? q.n.slice(0, 2).map((x) => clamp(+x || 0, -1, 1)) : undefined, inner: q.inner ? 1 : 0 })).filter((q) => q.k),
     })),
     mlv: {}, tUp: {},
   };
   for (const k in c.mlv || {}) if (KEY_RE.test(k)) out.mlv[k] = clamp(c.mlv[k] | 0, 1, 20);
   for (const k in c.tUp || {}) if (KEY_RE.test(k)) { const u = c.tUp[k] || {}; out.tUp[k] = { b: u.b === 'a' || u.b === 'b' ? u.b : '', l: clamp(u.l | 0, 0, 3) }; }
-  if (JSON.stringify(out).length > 150000) throw new Error('château trop gros');
+  if (JSON.stringify(out).length > 300000) throw new Error('château trop gros');
   return out;
 }
 function cleanHero(h) {
