@@ -455,6 +455,8 @@ details.qty{margin-top:6px}details.qty summary{cursor:pointer;font-weight:800;co
 .onl-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
 .onl-list,.onl-top{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}.onl-list li{background:#132245;border-left:4px solid var(--line);border-radius:8px;padding:6px 10px}.onl-list li.good{border-left-color:#4ae07a}.onl-list li.bad{border-left-color:#e2413b}.onl-list small{color:var(--muted);margin-left:4px}
 .onl-top li{display:grid;grid-template-columns:28px 1fr auto;gap:6px;background:#132245;border-radius:8px;padding:5px 10px}.onl-top li.meRow{outline:2px solid var(--gold)}
+.sbub.hype{border-color:#c8322a;background:#fff3c4;width:min(46%,400px)}#npcSay.hype{display:block;font:900 clamp(14px,2.2vw,22px)/1.15 var(--f-display,inherit);color:#c8322a;text-transform:uppercase;text-shadow:0 2px 0 #ffd84a;animation:garbShake .35s ease-in-out infinite alternate}@keyframes garbShake{from{transform:rotate(-1.2deg) scale(1)}to{transform:rotate(1.2deg) scale(1.04)}}
+.garbbox{max-width:560px;text-align:center}.garbsell{margin:0 0 6px;font-weight:800;color:var(--muted)}.garbbig{font-family:var(--f-display,inherit);font-size:clamp(30px,7vw,52px);line-height:1.05;color:#ffe14a;text-shadow:0 3px 0 #a33,0 0 18px rgba(255,200,40,.6);animation:garbPulse .6s ease-in-out infinite alternate;margin:6px 0}.garbmid{font-family:var(--f-display,inherit);font-size:clamp(18px,4vw,26px);color:#fff;text-shadow:0 2px 0 #000;margin:6px 0}.garbsm{font-size:15px;font-style:italic;color:#ffd9a0;margin:4px 0}@keyframes garbPulse{from{transform:scale(1) rotate(-1.5deg)}to{transform:scale(1.07) rotate(1.5deg)}}.garbcard{border-color:#ffe14a!important;box-shadow:0 0 14px rgba(255,225,74,.35)}
 .newdot{position:relative}.newdot::after{content:'';position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#ff4a3a;box-shadow:0 0 6px #ff4a3a}.pnote.pnew{border-color:var(--gold,#ffcf4a)}
 </style>
 
@@ -1471,11 +1473,30 @@ function brewDraw(){const cv=document.getElementById('brewCv');if(!cv){BREW.raf=
   if(BREW.phase==='stir'){BREW.pos+=BREW.dir*.011*(1+BREW.hits.length*.15);if(BREW.pos>1){BREW.pos=1;BREW.dir=-1}if(BREW.pos<0){BREW.pos=0;BREW.dir=1}const n=document.getElementById('stirN');if(n)n.style.left=(BREW.pos*100)+'%'}}
 function mountBrew(){cancelAnimationFrame(BREW.raf);if(document.getElementById('brewCv'))BREW.raf=requestAnimationFrame(brewDraw);
   document.querySelectorAll('[data-brewtake]').forEach(el=>el.onchange=()=>{const b=(S.brews||[]).find(x=>x.id===+el.dataset.brewtake);if(b){b.take=el.checked;save()}})}
-function brewLoad(){const out=[];for(const b of (S.brews||[])){if(!b.take||out.length>=3)continue;const key='brew:'+b.id;RITEMS[key]={ic:b.ic,n:b.name,d:brewDesc(b)};out.push(key)}return out}
+function brewLoad(){const out=[];if(garbS().own>0){RITEMS.garb={ic:'🫙',n:'Eau de Garbourg',d:'Rend 1 PV par seconde pendant 100 s · ralentit pendant 20 s'};out.push('garb')}for(const b of (S.brews||[])){if(!b.take||out.length>=3)continue;const key='brew:'+b.id;RITEMS[key]={ic:b.ic,n:b.name,d:brewDesc(b)};out.push(key)}return out}
+
+/* ===== Eau de Garbourg : la « super potion » mystère de Mère Sauge ===== */
+const GARB_PRICE=10000;
+const GARB_LINES=['UNE SUPER POTION !!!','LA MEILLEURE DE TOUT LE ROYAUME !!!','RECETTE SECRÈTE ! INGRÉDIENTS INTROUVABLES !','UN DRAGON EN A BU… IL PLEURE ENCORE DE JOIE !','JE NE PEUX PAS DIRE CE QU\'ELLE FAIT : C\'EST TROP PUISSANT !','UNE SEULE FIOLE !!! PRIX D\'AMI : 10 000 OR !','ACHÈTE-LA AVANT QUE JE CHANGE D\'AVIS !!!','LES HÉROS SE L\'ARRACHENT !!!'];
+const garbHot=()=>{const g=garbS();return !g.gone&&!g.own};
+const garbS=()=>{S.garb=S.garb||{own:0,gone:0,seen:0};return S.garb};
+function garbHype(){const mb=$('#mbox');mb.className='mbox frame garbbox';
+  mb.innerHTML=`<div class="garbbig">UNE SUPER POTION !!!</div>
+  <p style="margin:6px 0;font-weight:800">Acheter la <b>fiole mystère</b> de Mère Sauge pour <b style="color:var(--gold,#ffcf4a)">${fmt(GARB_PRICE)} or</b> ?</p>
+  <p class="sub" style="margin:0">Nom et effets révélés après l'achat · une seule fiole · utilisable en raid comme objet de raid.</p>
+  <div class="actions"><button class="btn" data-act="closeModal">Non merci…</button><button class="btn primary big" data-act="garbBuy" ${S.hero.gold<GARB_PRICE?'disabled':''}>💰 JE LA VEUX ! (${fmt(GARB_PRICE)} or)</button></div>`;
+  $('#modal').hidden=false;try{sfx.level()}catch(e){}}
+function garbReveal(){const mb=$('#mbox');mb.className='mbox frame garbbox';
+  mb.innerHTML=`<div class="garbmid">🫙 Tu as acheté… l'<b>Eau de Garbourg</b> !</div>
+  <ul style="margin:8px 0;line-height:1.7;font-weight:700"><li>💚 Rend <b>1 PV par seconde</b> pendant <b>100 secondes</b></li><li>🐌 <b>Ralentit</b> pendant <b>20 secondes</b></li></ul>
+  <p class="sub" style="margin:0">Elle t'attend dans ton sac de raid : bois-la pendant un pillage comme un objet de raid.</p><p class="garbsm" style="margin-top:8px">« … Enfin, c'est une SUPER potion, hein. Fais-moi confiance. »</p>
+  <div class="actions"><button class="btn primary" data-act="closeModal">Euh… merci ?</button></div>`;$('#modal').hidden=false}
+function drinkGarb(){const h=G.hero,tr=G.castle&&G.castle.training;if(!tr){const g=garbS();g.own=Math.max(0,g.own-1);G.garbUsed=1;save()}
+  h.garbT=100;h.bf=h.bf||{};h.bf.spd={v:-.4,t:20,dur:20};ring(h.x,h.y,10,70,.5,0x8aa040);spark(h.x,h.y,30,18,'150,170,70',{spd:90,up:120,life:.7,size:6});addText(h.x,h.y,h.ht+16,"🫙 Eau de Garbourg… beurk !",'#b8c86a',20);addText(h.x,h.y,h.ht+38,'🐌 Ralenti 20 s','#c8b88a',15);try{sfx.heal()}catch(e){}}
 function drinkBrew(key){const id=+key.slice(5),i=(S.brews||[]).findIndex(b=>b.id===id);if(i<0)return;const b=S.brews.splice(i,1)[0],h=G.hero,F=BREW_FX[b.k];save();
   h.bf=h.bf||{};if(b.k==='ombre'){h.stealthT=Math.max(h.stealthT||0,b.v)}else if(b.k==='crit'){if(!h.bf.crit)h.crit+=b.v*100;h.bf.crit={v:b.v,t:b.dur}}else if(b.k==='giant'){if(!h.bf.giant){h.maxHp*=1+b.v;h.hp*=1+b.v}h.bf.giant={v:b.v,t:b.dur}}else h.bf[b.k==='curse'?'spd':b.k]={v:b.k==='curse'?-b.v:b.v,t:b.dur,dur:b.dur};
   ring(h.x,h.y,10,70,.5,parseInt(F.c.slice(1),16));spark(h.x,h.y,30,18,'255,255,255',{spd:90,up:120,life:.6,glow:true});addText(h.x,h.y,h.ht+16,b.ic+' '+F.n,F.c,20);sfx.heal()}
-function brewTick(dt){const h=G.hero;if(!h||!h.bf)return;for(const k in h.bf){const o=h.bf[k];o.t-=dt;if(k==='regen'&&h.hp>0)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*o.v/(o.dur||10)*dt);
+function brewTick(dt){const h=G.hero;if(h&&h.garbT>0){h.garbT-=dt;if(h.hp>0)h.hp=Math.min(h.maxHp,h.hp+1*dt);h.garbK=(h.garbK||0)-dt;if(h.garbK<=0){h.garbK=5;addText(h.x,h.y,h.ht+10,'+5','#b8c86a',13)}}if(!h||!h.bf)return;for(const k in h.bf){const o=h.bf[k];o.t-=dt;if(k==='regen'&&h.hp>0)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*o.v/(o.dur||10)*dt);
     if(o.t<=0){if(k==='crit')h.crit-=o.v*100;if(k==='giant'){h.maxHp/=1+o.v;h.hp=Math.min(h.hp,h.maxHp)}delete h.bf[k]}}}
 const bfv=k=>{const h=G.hero;return h&&h.bf&&h.bf[k]?h.bf[k].v:0};
 function viewAlchimie(){
@@ -2115,6 +2136,7 @@ function viewMarche(){
     <div class="mk seeds">${[1,2,3,4,5].map(l=>{const ok=gl>=SEED_GL[l-1],st=ss.stock[l]||0,pr=seedPrice(l);return `<article class="frame ${ok?'':'off'}"><b>🌱 Graine niveau ${l}</b><small style="color:var(--muted);font-weight:700">Pousse en ${fmtDur(DUR[l-1])} · 2 à 3 herbes niv. ${l}</small>
       <div class="bar"><span class="chip ${st?'':'no'}">Stock du jour : ${ok?st:'—'}</span></div>
       <button class="btn ${ok&&st?'primary':''}" data-act="buySeed" data-l="${l}" ${!ok||!st||S.hero.gold<pr?'disabled':''}>${ok?(st?`Acheter (${pr} or)`:'Épuisé jusqu\'à minuit'):`🔒 Joueur niv. ${SEED_GL[l-1]}`}</button></article>`}).join('')}
+      ${(()=>{const g=garbS();return g.gone?`<article class="frame off"><b>🚫 Eau de Garbourg</b><small style="color:var(--muted);font-weight:700">Retirée de la vente. Mère Sauge marmonne : « La recette n'était pas si bonne que ça… »</small></article>`:g.own?`<article class="frame"><b>🫙 Eau de Garbourg</b><small style="color:var(--muted);font-weight:700">Rend 1 PV/s pendant 100 s · ralentit 20 s. Dans ton sac de raid.</small><div class="bar"><span class="chip ok">En ta possession</span></div></article>`:`<article class="frame garbcard"><b>❓ Fiole mystère</b><small style="color:var(--muted);font-weight:700">« UNE SUPER POTION !!! » d'après Mère Sauge. Nom et effets inconnus.</small><div class="bar"><span class="chip">${fmt(GARB_PRICE)} or</span></div><button class="btn primary" data-act="garbAsk">🤩 C'est quoi ?!</button></article>`})()}
       <article class="frame"><b>🧪 Potion de réserve</b><small style="color:var(--muted);font-weight:700">Une charge de potion en plus pour ton prochain pillage (3 au plus).</small><div class="bar"><span class="chip">${S.extraPot}/3</span></div><button class="btn" data-act="buyPot" ${S.hero.gold<50||S.extraPot>=3?'disabled':''}>Acheter (50 or)</button></article></div>`}
   else if(shop.k==='ench')body=viewEnchant();
   else if(shop.k==='artisan')body=viewArtisan();
@@ -2166,8 +2188,8 @@ const SHOP_NPC={
  artisan:{skin:'#c88a60',hair:'#6a2a1a',cloth:'#3a3440',apron:'#5a3a22',acc:'goggles',accC:'#ff3d6e',wall:'#2c2832',wall2:'#24202a'},
  broc:{skin:'#e8b890',hair:null,cloth:'#8a6a44',apron:null,acc:'glasses',accC:'#2a2a2a',wall:'#8a6844',wall2:'#7a5a3a'}};
 const SIW=320,SIH=150;
-function shopSay(k,force){const pool=(SHOP_TALK[k]||[]).concat(SHOP_TIPS[k]||[],SHOP_GEN_TIPS);let i;do{i=Math.floor(Math.random()*pool.length)}while(pool.length>1&&i===SHOPTALK.i&&SHOPTALK.k===k);
-  SHOPTALK.k=k;SHOPTALK.i=i;SHOPTALK.t0=performance.now();SHOPTALK.txt=pool[i];const el=document.getElementById('npcSay');if(el){el.textContent=pool[i];el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}}
+function shopSay(k,force){const hot=k==='herbes'&&garbHot(),pool=hot?GARB_LINES:(SHOP_TALK[k]||[]).concat(SHOP_TIPS[k]||[],SHOP_GEN_TIPS);let i;do{i=Math.floor(Math.random()*pool.length)}while(pool.length>1&&i===SHOPTALK.i&&SHOPTALK.k===k);
+  SHOPTALK.k=k;SHOPTALK.i=i;SHOPTALK.t0=performance.now();SHOPTALK.txt=pool[i];const el=document.getElementById('npcSay');if(el){el.textContent=pool[i];el.classList.toggle('hype',hot);if(el.parentNode)el.parentNode.classList.toggle('hype',hot);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}}
 function drawNpc(c,r,x,y,t,talk,P){const bob=Math.round(Math.sin(t/600)),blink=(t%3800)<130,mouth=talk&&Math.floor(t/120)%2===0;y+=bob;
   // corps
   r(x-12,y+16,24,30,P.cloth);r(x-12,y+16,24,3,'rgba(0,0,0,.18)');if(P.apron){r(x-8,y+24,16,22,P.apron);r(x-8,y+24,16,2,'rgba(255,255,255,.15)')}
@@ -2231,12 +2253,12 @@ function drawShopIn(c,t,k){const P=SHOP_NPC[k]||SHOP_NPC.broc,r=(x,y,w,h,col)=>{
 let SHOPHOV=false;const SHP={raf:0};window.__shopHov=v=>{SHOPHOV=v};
 function mountShop(){const cv=document.getElementById('shopCv');if(!cv)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
   if(SHOPTALK.k!==shopIn)shopSay(shopIn);
-  const loop=()=>{if(!cv.isConnected||tab!=='marche'||!shopIn){SHP.raf=0;return}SHP.raf=requestAnimationFrame(loop);if(G.active)return;const t=performance.now();drawShopIn(c,t,shopIn);if(t-SHOPTALK.t0>11000)shopSay(shopIn)};
+  const loop=()=>{if(!cv.isConnected||tab!=='marche'||!shopIn){SHP.raf=0;return}SHP.raf=requestAnimationFrame(loop);if(G.active)return;const t=performance.now();drawShopIn(c,t,shopIn);if(t-SHOPTALK.t0>(shopIn==='herbes'&&garbHot()?3200:11000))shopSay(shopIn)};
   cancelAnimationFrame(SHP.raf);SHP.raf=requestAnimationFrame(loop)}
 function shopInHTML(shop){return `<div class="shopin" style="aspect-ratio:${SIW}/${SIH}"><canvas id="shopCv" width="${SIW}" height="${SIH}"></canvas>
   <button class="sdoor" data-act="shopOut" style="left:${1/SIW*100}%;top:${30/SIH*100}%;width:${44/SIW*100}%;height:${66/SIH*100}%" aria-label="Sortir dans la rue" onmouseenter="__shopHov(true)" onmouseleave="__shopHov(false)" onfocus="__shopHov(true)" onblur="__shopHov(false)"><span>🚪 Sortir</span></button>
   <button class="snpc" data-act="npcTalk" style="left:${196/SIW*100}%;top:${32/SIH*100}%;width:${36/SIW*100}%;height:${56/SIH*100}%" aria-label="Parler à ${shop.who}"></button>
-  <div class="sbub" style="left:${70/SIW*100}%;top:${4/SIH*100}%"><b>${shop.who}</b><span id="npcSay">${esc(SHOPTALK.k===shop.k?SHOPTALK.txt:'')}</span><small>Clique sur le marchand pour discuter</small></div>
+  <div class="sbub ${shop.k==='herbes'&&garbHot()?'hype':''}" style="left:${70/SIW*100}%;top:${4/SIH*100}%"><b>${shop.who}</b><span id="npcSay" class="${shop.k==='herbes'&&garbHot()?'hype':''}">${esc(SHOPTALK.k===shop.k?SHOPTALK.txt:'')}</span><small>Clique sur le marchand pour discuter</small></div>
   <div class="shname">${shop.n}</div></div>`}
 const SHOP_AV={forge:'⚒️',armure:'🛡️',armes:'⚔️',mage:'🔮',herbes:'🌿',pals:'🐾',broc:'💰',ench:'🔮✨',artisan:'🔨'};
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act,id=+b.dataset.id;
@@ -2258,6 +2280,8 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');i
   if(a==='npcTalk'){if(shopIn){shopSay(shopIn);tone(500+Math.random()*200,560,.06,'square',.02)}return}
   if(a==='buy'){const arr=(S.market.shops||{})[b.dataset.k]||[],o=arr.find(x=>x.it.id===id);if(!o||S.hero.gold<o.price||S.hero.bag.length>=bagMax())return;S.hero.gold-=o.price;S.hero.bag.push(o.it);cnt('buy_'+b.dataset.k);S.market.shops[b.dataset.k]=arr.filter(x=>x!==o);save();renderHub();sfx.loot();toast(`${o.it.name} acheté`)}
   if(a==='reroll'){const k=b.dataset.k,c=20+8*S.hero.lvl;if(!SHOP_ITEMS[k]||S.hero.gold<c)return;S.hero.gold-=c;S.market.shops[k]=genShop(k);save();renderHub();sfx.coin()}
+  if(a==='garbAsk'){const g=garbS();if(g.gone||g.own)return;garbHype();return}
+  if(a==='garbBuy'){const g=garbS();if(g.gone||g.own||S.hero.gold<GARB_PRICE)return;S.hero.gold-=GARB_PRICE;g.own=1;g.seen=1;save();renderHub();renderTop();garbReveal();return}
   if(a==='buyPot'){if(S.hero.gold<50||S.extraPot>=3)return;S.hero.gold-=50;S.extraPot++;save();renderHub();sfx.heal();toast('Potion de réserve ajoutée à ton prochain raid')}
   if(a==='salv'){const i=S.hero.bag.findIndex(x=>x.id===id);if(i<0)return;const it=S.hero.bag[i],g=salvGive(it),m=MATS();m.rune+=g.rune;m.heart+=g.heart;m.uni+=g.uni||0;S.hero.bag.splice(i,1);save();renderHub();sfx.coin();toast(`${it.name} démantelé : +${g.rune} 🔷${g.heart?` · +${g.heart} 🌟`:''}${g.uni?` · +${g.uni} 💠`:''}`);return}
   if(a==='brewAdd'){if(BREW.slots.length>=3||BREW.phase!=='idle')return;const x=(BREW.opts||[])[+b.dataset.oi];if(!x||ingUsed(x)>=x.have)return;BREW.slots.push(x);renderHub();tone(300+BREW.slots.length*80,200,.12,'sine',.04);return}
@@ -2334,8 +2358,10 @@ function applyGfx(){const g=GFX();if(!R)return;try{R.renderer.setPixelRatio(Math
 function setRow(lbl,k,opts,cur){return `<div class="setrow"><span>${lbl}</span><div class="seg">${opts.map(([v,t])=>`<button class="btn sm ${String(cur)===String(v)?'primary':'ghost'}" data-act="setG" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`}
 
 /* ===== Notes de mise à jour (Réglages → Patch notes) ===== */
-const PATCH_V=110;let setTab='reg';
+const PATCH_V=111;let setTab='reg';
 const PATCHES=[
+ {v:111,t:'12 octobre 2026',n:'Une SUPER potion ?!',s:[
+  ['🧙‍♀️ Herboriste',['Mère Sauge a reçu une <b>fiole mystère</b>. Elle jure que c\'est « UNE SUPER POTION ». Son nom et ses effets ne seront révélés qu\'après l\'achat… à tes risques et périls !']]]},
  {v:110,t:'11 octobre 2026',n:'Compagnon libre et niveaux requis',s:[
   ['🤝 Compagnon',['Le compagnon choisi avant le raid se déplace <b>librement</b> : il choisit ses cibles et se promène autour de toi, mais reste toujours à proximité (il revient si tu t\'éloignes).']],
   ['🎒 Équipement',['Un objet ne peut être équipé que si ton héros a <b>le niveau requis</b> (niveau de l\'objet ≤ niveau du héros).','Tu peux toujours <b>envoyer</b> un objet à un autre héros (par ex. à la Recrue) : il pourra l\'équiper une fois au bon niveau.','Un objet porté sans le niveau requis est retiré automatiquement (ou reste inactif si le sac est plein).']],
@@ -2950,7 +2976,7 @@ function updRaidObjs(dt){const h=G.hero;
     if(l.t>.4&&dist(l,h)<h.r+18){if(G.rbag.length<3){l.dead=true;G.rbag.push(l.k);sfx.loot();addText(h.x,h.y,h.ht+22,RITEMS[l.k].ic+' '+RITEMS[l.k].n,'#ffd36a',18)}else if(!l.warn){l.warn=1;addText(h.x,h.y,h.ht+22,'Sac de raid plein','#ffab9e',16)}}else l.warn=0}
   G.rloot=G.rloot.filter(l=>!l.dead);
   if(h.rageT>0)h.rageT-=dt;if(h.ventT>0)h.ventT-=dt;brewTick(dt)}
-function useRItem(i){const h=G.hero;if(!G.active||G.over||!G.rbag[i])return;const k=G.rbag.splice(i,1)[0];if(k.startsWith('brew:')){drinkBrew(k);return}
+function useRItem(i){const h=G.hero;if(!G.active||G.over||!G.rbag[i])return;const k=G.rbag.splice(i,1)[0];if(k.startsWith('brew:')){drinkBrew(k);return}if(k==='garb'){drinkGarb();return}
   if(k==='bombe'){ring(h.x,h.y,10,140,.45,0xff8a3a);spark(h.x,h.y,12,34,'255,150,50',{spd:260,up:180,life:.6,size:8,glow:true});G.shake=.5;sfx.slam();
     for(const e of G.enemies){if(e.dead)continue;const d=dist(h,e);if(d<130+e.r){dmgEnemy(e,h.atk*3);knock(e,(e.x-h.x)/(d||1),(e.y-h.y)/(d||1),.6)}}for(const p of G.props)if(!p.dead&&p.k!=='coffret'&&dist(h,p)<150)breakProp(p)}
   else if(k==='foudre'){propsAoe(h.x,h.y,200);const tg=G.enemies.filter(e=>!e.dead).sort((a,b)=>dist(h,a)-dist(h,b)).slice(0,4).filter(e=>dist(h,e)<520);
@@ -5085,6 +5111,7 @@ function showResults(success,abandon){
     else{gold=gold*.5;title=abandon?'Raid abandonné':'Ton héros est tombé';sub="Tu gardes la moitié de l'or ramassé, l'expérience et les sacs déjà récupérés. Le coffre, lui, reste fermé."}}
   if(fail&&!abandon&&!c.mine&&S.hero.cls!=='recrue'){S.ko=S.ko||{};S.ko[S.hero.cls]=NOW()+KO_MS;notes.push(['bad',`Ton ${CL().name} est blessé : il se repose 10 minutes. Joue un autre héros ou la Recrue en attendant.`])}
   {const tx=[];for(const l in G.seedsGot){const n=Math.round(G.seedsGot[l]*(fail?.5:1));if(n){S.seeds[l]=(S.seeds[l]||0)+n;tx.push(n+' × niv. '+l)}}if(tx.length)notes.push(['good','Graines trouvées : '+tx.join(', ')+". Plante-les dans l'Alchimie."])}if(c.arena)arenaResult(success,notes);if(c.online)onlineRaidEnd(c,success,notes);setTimeout(()=>cloudSave(false),1500);if(!c.mine){const rc=success?c.rooms.length:Math.max(0,G.roomIdx),bpp=bpAdd(rc*10+(success?30:0)+(success&&c.arena?15:0)+(G.kills||0));if(bpp)notes.push(['good',`🎟 Passe de combat : +${bpp} points`])}if(!c.mine){qProg('kills',G.kills);cnt('kills',G.kills);if(G.pal&&success)cnt('palRaids');if(success&&!c.arena){qProg('raids',1);S.stats.raids++}if(success&&c.arena)qProg('arena',1)}gold=Math.round(gold*(1+.06*tr('fortune'))*(S.pals.active==='boulet'?1.06:1));S.hero.gold+=gold;const ups=xp?addXp(xp):0;
+  if(G.garbUsed){G.garbUsed=0;const g=garbS();if(!g.gone){g.gone=1;g.own=0;notes.push(['bad',"🫙 Mère Sauge retire l'Eau de Garbourg de la vente : « Bon… la recette n'était pas si bonne que ça. » La fiole disparaît de ton stock."])}}
   {const acc={n:0,g:0,f:0,fg:0};for(const it of items)bagAdd(it,acc);if(acc.n)notes.push(['',`Vente automatique : ${acc.n} objet(s) vendu(s) pour ${fmt(acc.g)} or.`]);if(acc.f)notes.push(['',`Sac plein : ${acc.f} objet(s) vendu(s) pour ${fmt(acc.fg)} or.`])}
   if(S.hero.bag.length>bagMax()){S.hero.bag.sort((a,b)=>b.value-a.value);const extra=S.hero.bag.splice(bagMax());let sold=0;for(const it of extra)sold+=it.value;S.hero.gold+=sold;notes.push(['',`Sac plein : ${extra.length} objet(s) vendu(s) automatiquement pour ${sold} or.`])}
   if(ups){notes.push(['good',`Niveau ${S.hero.lvl} atteint ! Attaque, défense et PV augmentent. +${ups} point(s) de talent.`]);setTimeout(sfx.level,200)}

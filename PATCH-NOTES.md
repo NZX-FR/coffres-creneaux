@@ -1,5 +1,8 @@
 # 📜 Coffres & Créneaux : notes de mise à jour
 
+# Version 111 : Une SUPER potion ?!
+- 🧙‍♀️ **Herboriste** : Mère Sauge a reçu une **fiole mystère**. Elle jure que c'est « UNE SUPER POTION ». Son nom et ses effets ne seront révélés qu'après l'achat… à tes risques et périls !
+
 # Version 110 : Compagnon libre et niveaux requis
 - 🤝 **Compagnon** : celui que tu choisis avant le raid se déplace **librement**. Il choisit ses cibles et se promène autour de toi, mais reste toujours à proximité (il revient si tu t'éloignes).
 - 🎒 **Niveau requis** : un objet ne peut être équipé que si ton héros a au moins son niveau. Tu peux toujours l'envoyer à un autre héros (la Recrue par exemple), qui l'équipera une fois au bon niveau. Un objet porté sans le niveau requis est retiré automatiquement.
