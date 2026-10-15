@@ -10,6 +10,19 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const NAME_RE = /^[A-Za-zÀ-ÿ0-9 _\-]{3,16}$/;
 const PIN_RE = /^\d{4,8}$/;
 const KEY_RE = /^[a-z]{2,14}$/;
+const MAIL_RE = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,24}$/i;
+const maskMail = (m) => { if (!m) return null; const [u, d] = m.split('@'); return (u.length <= 2 ? u[0] + '*' : u.slice(0, 2) + '***' + u.slice(-1)) + '@' + d; };
+async function sendMail(env, to, subject, html) {
+  if (!env.BREVO_KEY || !env.MAIL_FROM) throw new Error("L'envoi de mails n'est pas encore configuré sur le serveur (BREVO_KEY / MAIL_FROM)");
+  const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_KEY, 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ sender: { name: env.MAIL_NAME || 'Coffres & Créneaux', email: env.MAIL_FROM }, to: [{ email: to }], subject, htmlContent: html }) });
+  if (!r.ok) throw new Error("Le mail n'a pas pu être envoyé (" + r.status + ')');
+}
+async function findPlayer(store, login) {
+  login = String(login || '').trim();
+  if (login.includes('@')) { const e = await store.get('email/' + (await sha(login.toLowerCase())), { type: 'json' }); return e ? store.get('player/' + e.id, { type: 'json' }) : null; }
+  const n = await store.get('name/' + login.toLowerCase(), { type: 'json' }); return n ? store.get('player/' + n.id, { type: 'json' }) : null;
+}
 const INBOX_MAX = 40, HIST_MAX = 30;
 
 // ---------- index des joueurs (un seul blob, écrit avec un verrou optimiste quand c'est possible) ----------
@@ -85,27 +98,52 @@ export async function handle(req, store, env = {}) {
     if (path === '/ping') return json({ ok: true, t: Date.now() });
 
     if (path === '/register' && method === 'POST') {
-      const name = String(body.name || '').trim(), pin = String(body.pin || '');
+      const name = String(body.name || '').trim(), pin = String(body.pin || ''), email = String(body.email || '').trim().toLowerCase();
       if (!NAME_RE.test(name)) return err('Pseudo : 3 à 16 lettres, chiffres, espaces, - ou _');
-      if (!PIN_RE.test(pin)) return err('Code secret : 4 à 8 chiffres');
-      const low = name.toLowerCase();
+      if (!PIN_RE.test(pin)) return err('Mot de passe : 4 à 8 chiffres');
+      if (!MAIL_RE.test(email)) return err('Adresse mail invalide');
+      const low = name.toLowerCase(), eh = await sha(email);
       if (await store.get('name/' + low, { type: 'json' })) return err('Ce pseudo est déjà pris', 409);
+      if (await store.get('email/' + eh, { type: 'json' })) return err('Cette adresse mail est déjà utilisée par un autre compte', 409);
       const id = rnd(8), salt = rnd(8), token = rnd(24);
-      const p = { id, name, salt, pinHash: await sha(salt + pin), tokenHash: await sha(token), created: Date.now(), trophies: 1000, wins: 0, losses: 0, defW: 0, defL: 0, castleAt: 0, castleMeta: null, hero: null };
+      const p = { id, name, salt, email, pinHash: await sha(salt + pin), tokenHash: await sha(token), created: Date.now(), trophies: 1000, wins: 0, losses: 0, defW: 0, defL: 0, castleAt: 0, castleMeta: null, hero: null };
       await store.setJSON('name/' + low, { id });
+      await store.setJSON('email/' + eh, { id });
       await store.setJSON('player/' + id, p);
       await updateIndex(store, (ix) => { ix.players[id] = pubPlayer(p); });
-      return json({ id, name, token: id + '.' + token, trophies: p.trophies });
+      return json({ id, name, token: id + '.' + token, trophies: p.trophies, email: maskMail(email) });
+    }
+
+    // ----- mot de passe oublié : un code à 6 chiffres est envoyé par mail -----
+    if (path === '/reset/request' && method === 'POST') {
+      const p = await findPlayer(store, body.login);
+      if (!p) return err('Compte introuvable', 404);
+      if (!p.email) return err("Ce compte n'a pas d'adresse mail : impossible de réinitialiser le mot de passe", 400);
+      if (p.reset && Date.now() - p.reset.at < 60000) return err('Un code vient déjà d\'être envoyé : patiente une minute');
+      const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+      p.reset = { hash: await sha(p.salt + 'reset' + code), exp: Date.now() + 15 * 60000, at: Date.now(), tries: 0 };
+      await sendMail(env, p.email, 'Coffres & Créneaux : ton code de réinitialisation', `<p>Bonjour ${p.name},</p><p>Voici ton code pour choisir un nouveau mot de passe :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px">${code}</p><p>Il est valable 15 minutes. Si tu n'as rien demandé, ignore ce mail.</p>`);
+      await store.setJSON('player/' + p.id, p);
+      return json({ ok: true, email: maskMail(p.email) });
+    }
+    if (path === '/reset/confirm' && method === 'POST') {
+      const p = await findPlayer(store, body.login), code = String(body.code || '').trim(), pin = String(body.pin || '');
+      if (!p || !p.reset || Date.now() > p.reset.exp) return err('Code expiré : redemande un code');
+      if (p.reset.tries >= 5) return err('Trop d\'essais : redemande un code');
+      if (!PIN_RE.test(pin)) return err('Mot de passe : 4 à 8 chiffres');
+      if (p.reset.hash !== (await sha(p.salt + 'reset' + code))) { p.reset.tries++; await store.setJSON('player/' + p.id, p); return err('Code incorrect', 401); }
+      const token = rnd(24); p.pinHash = await sha(p.salt + pin); p.tokenHash = await sha(token); delete p.reset;
+      await store.setJSON('player/' + p.id, p);
+      return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies, email: maskMail(p.email) });
     }
 
     if (path === '/login' && method === 'POST') {
-      const name = String(body.name || '').trim(), pin = String(body.pin || '');
-      const n = await store.get('name/' + name.toLowerCase(), { type: 'json' });
-      const p = n && (await store.get('player/' + n.id, { type: 'json' }));
-      if (!p || p.pinHash !== (await sha(p.salt + pin))) return err('Pseudo ou code incorrect', 401);
+      const pin = String(body.pin || '');
+      const p = await findPlayer(store, body.name);
+      if (!p || p.pinHash !== (await sha(p.salt + pin))) return err('Pseudo ou mot de passe incorrect', 401);
       const token = rnd(24); p.tokenHash = await sha(token);
       await store.setJSON('player/' + p.id, p);
-      return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies });
+      return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies, email: maskMail(p.email) });
     }
 
     if (path === '/leaderboard') {
@@ -126,7 +164,18 @@ export async function handle(req, store, env = {}) {
     const me = await auth(store, req);
     if (!me) return err('Session expirée : reconnecte-toi', 401);
 
-    if (path === '/me') return json({ me: pubPlayer(me) });
+    if (path === '/me') return json({ me: pubPlayer(me), email: maskMail(me.email) });
+
+    if (path === '/account/email' && method === 'POST') {
+      const email = String(body.email || '').trim().toLowerCase(), pin = String(body.pin || '');
+      if (me.pinHash !== (await sha(me.salt + pin))) return err('Mot de passe incorrect', 401);
+      if (!MAIL_RE.test(email)) return err('Adresse mail invalide');
+      const eh = await sha(email), ex = await store.get('email/' + eh, { type: 'json' });
+      if (ex && ex.id !== me.id) return err('Cette adresse mail est déjà utilisée par un autre compte', 409);
+      if (me.email) await store.delete('email/' + (await sha(me.email))).catch(() => {});
+      me.email = email; await store.setJSON('email/' + eh, { id: me.id }); await store.setJSON('player/' + me.id, me);
+      return json({ ok: true, email: maskMail(email) });
+    }
 
     // ----- synchronisation groupée : profil + attaques subies (or encaissé) + raids + classement, en UNE requête -----
     if (path === '/sync') {
@@ -137,7 +186,7 @@ export async function handle(req, store, env = {}) {
       for (const e of ib.events) if (!e.claimed) { e.claimed = 1; gold += e.gold || 0; fresh.push(e); }
       if (fresh.length) await store.setJSON('inbox/' + me.id, ib);
       const top = ix ? Object.values(ix.data.players).sort((a, b) => b.trophies - a.trophies).slice(0, 50) : undefined;
-      const body = { me: pubPlayer(me), events: ib.events, raids: hist.raids, claimed: { gold, n: fresh.length, lost: fresh.filter((e) => e.success).length }, top, save: me.saveMeta || null };
+      const body = { me: pubPlayer(me), events: ib.events, raids: hist.raids, claimed: { gold, n: fresh.length, lost: fresh.filter((e) => e.success).length }, top, save: me.saveMeta || null, email: maskMail(me.email) };
       return json(body);
     }
 
@@ -148,7 +197,7 @@ export async function handle(req, store, env = {}) {
       if (!/^[A-Za-z0-9+/=]+$/.test(data)) return err('Sauvegarde invalide');
       const meta = { t: Date.now(), lvl: clamp(body.lvl | 0, 0, 999), cls: KEY_RE.test(body.cls || '') ? body.cls : '', pl: clamp(body.pl | 0, 0, 999), size: data.length };
       await store.setJSON('save/' + me.id, { ...meta, data });
-      me.saveMeta = meta; await store.setJSON('player/' + me.id, me);
+      const old = me.saveMeta; me.saveMeta = meta; if (!old || meta.t - old.t > 300000) await store.setJSON('player/' + me.id, me);
       return json({ ok: true, save: meta });
     }
     if (path === '/save' && method === 'GET') {
@@ -200,8 +249,8 @@ export async function handle(req, store, env = {}) {
       const def = await store.get('player/' + raid.target, { type: 'json' });
       if (!def) return err('Défenseur introuvable', 404);
       const diff = clamp((def.trophies - me.trophies) / 25, -10, 10);
-      const gain = success ? Math.round(clamp(20 + diff, 5, 35)) : -Math.round(clamp(12 - diff * .5, 4, 18));
-      const dGain = success ? -Math.round(Math.abs(gain) * .6) : Math.round(clamp(15 + diff * -.5, 6, 25));
+      const gain = success ? Math.round(clamp(40 + 2 * diff, 10, 70)) : -Math.round(clamp(24 - diff, 8, 36));
+      const dGain = success ? -Math.round(Math.abs(gain) * .6) : Math.round(clamp(30 - diff, 12, 50));
       me.trophies = Math.max(0, me.trophies + gain); def.trophies = Math.max(0, def.trophies + dGain);
       if (success) { me.wins++; def.defL++; } else { me.losses++; def.defW++; }
       const reward = success ? 0 : Math.round(40 * ((def.castleMeta || {}).lvl || 1) * (1 + (body.rooms | 0) * .1));
@@ -237,7 +286,8 @@ export async function handle(req, store, env = {}) {
 // ---------- point d'entrée Netlify ----------
 export default async (req) => {
   const { getStore } = await import('@netlify/blobs');
-  const env = { ADMIN_IDS: (globalThis.Netlify && Netlify.env && Netlify.env.get('ADMIN_IDS')) || process.env.ADMIN_IDS || '' };
+  const ge = (k) => (globalThis.Netlify && Netlify.env && Netlify.env.get(k)) || process.env[k] || '';
+  const env = { ADMIN_IDS: ge('ADMIN_IDS'), BREVO_KEY: ge('BREVO_KEY'), MAIL_FROM: ge('MAIL_FROM'), MAIL_NAME: ge('MAIL_NAME') };
   return handle(req, getStore({ name: 'coffres-creneaux', consistency: 'strong' }), env);
 };
 
