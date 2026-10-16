@@ -1,9 +1,15 @@
 # 📜 Coffres & Créneaux : notes de mise à jour
 
+# Version 113 : Petites corrections
+- 💎 **Butin** : les **cœurs légendaires** et les **runes uniques** lâchés par les boss suivent maintenant la même règle que les fragments runiques : ils tombent à partir du **niveau de joueur 15**.
+- 🔧 **Matchmaking** : l'onglet ne plante plus quand la saison n'est pas encore chargée (juste après le lancement, en jeu local) ; il affiche « Saison en cours de chargement… » puis se met à jour tout seul.
+- 🔧 Le message « Partie en local » ne cache plus le titre de la création du héros : il s'affiche après.
+- ✏️ « Comment jouer » : « Ton héros attaque tout seul » (au lieu de « Ton chevalier »).
+
 # Version 112 : Compte en ligne et sauvegarde
 - ☁️ **Sauvegarde en ligne** : ta partie est sauvegardée **sur ton compte**, automatiquement **toutes les 30 secondes** (seulement si quelque chose a changé). Le téléchargement / l'import de fichiers et les codes texte sont supprimés : connecte-toi sur n'importe quel appareil pour retrouver ta partie.
-- 🔑 **Compte obligatoire dès la première connexion** : nom de compte, mot de passe en chiffres et adresse mail. Connexion possible avec le nom de compte **ou** l'adresse mail.
-- 📧 **Mot de passe oublié** : un code à 6 chiffres est envoyé par mail pour en choisir un nouveau. Les anciens comptes peuvent ajouter leur adresse dans l'onglet En ligne.
+- 🔵 **Connexion avec Google uniquement** : un clic sur « Continuer avec Google », sans mot de passe. Ta partie est liée à ton compte Google et tu la retrouves sur n'importe quel appareil.
+- 🏠 **Jouer en local** : partie enregistrée seulement sur l'appareil ; tu peux la relier à Google plus tard avec la disquette 💾. Les anciens comptes avec mot de passe peuvent toujours se connecter et se lier à Google.
 - 💤 **Économie de données** : après 5 minutes sans action, la connexion au jeu est coupée (partie sauvegardée). Clique sur **Recharger** pour revenir.
 - 🌐 **En ligne** : trophées gagnés et perdus doublés (jusqu'à +70 / −36).
 - ⚔️ **Matchmaking** : les IA ne sont plus bloquées au niveau 30, elles suivent ton niveau ; les points gagnés et perdus augmentent de 50 %.
