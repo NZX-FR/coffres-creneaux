@@ -846,7 +846,7 @@ function defaultState(){
   const r=[emptyRoom(),emptyRoom(),emptyRoom(),emptyRoom(),emptyRoom()];
   r[0].mobs.gobelin=3;r[1].mobs.gobelin=2;r[1].mobs.archer=2;r[1].traps.piques=1;r[2].mobs.gelee=1;r[2].mobs.brute=1;
   return {hero:{tal:{},name:'',cls:'chevalier',created:false,lvl:1,xp:0,gold:150,equip:{arme:{id:1,slot:'arme',cls:'chevalier',base:'epee',r:'commun',ri:0,lvl:1,name:'Épée usée',stats:{atk:6},value:6},casque:null,armure:null,anneau:null},bag:[]},roster:{},unlocked:{},
-    cleared:{},best:{},my:{lvl:1,validated:false,boss:'boss',rooms:r,mlv:{},name:'',mUnl:{brute:true},bsk:{}},ctab:'caserne',journal:[],unread:0,nextId:2,help:true,muted:false,pots:{soin:1,ress:0,force:0,bouclier:0},potSel:'soin',herbs:0,camMode:'iso',zoom:1,seeds:{1:3,2:0,3:0,4:0,5:0},hl:{1:0,2:0,3:0,4:0,5:0},beds:[{l:0,t:0,d:0}],look:{},stats:{quests:0,arena:0,raids:0,defs:0},style:'classique',stylesOwn:{classique:1},pals:{own:{},active:''},quests:null,elo:1000,arena:{w:0,l:0},bots:null,keys:defaultKeys(),market:null,extraPot:0,nextRaid:0};
+    cleared:{},best:{},my:{lvl:1,validated:false,boss:'boss',rooms:r,mlv:{},name:'',mUnl:{brute:true},bsk:{},mines:[]},ctab:'caserne',journal:[],unread:0,nextId:2,help:true,muted:false,pots:{soin:1,ress:0,force:0,bouclier:0},potSel:'soin',herbs:0,camMode:'iso',zoom:1,seeds:{1:3,2:0,3:0,4:0,5:0},hl:{1:0,2:0,3:0,4:0,5:0},beds:[{l:0,t:0,d:0}],look:{},stats:{quests:0,arena:0,raids:0,defs:0},style:'classique',stylesOwn:{classique:1},pals:{own:{},active:''},quests:null,elo:1000,arena:{w:0,l:0},bots:null,keys:defaultKeys(),market:null,extraPot:0,nextRaid:0};
 }
 let S=defaultState();
 function migrateUniq(){const fix=h=>{if(!h)return;for(const it of [...Object.values(h.equip||{}),...(h.bag||[])])if(it&&it.set&&it.r!=='unique')makeUnique(it)};fix(S.hero);for(const k in (S.roster||{}))fix(S.roster[k])}
@@ -2258,7 +2258,7 @@ function shopInHTML(shop){return `<div class="shopin" style="aspect-ratio:${SIW}
   <div class="sbub ${shop.k==='herbes'&&garbHot()?'hype':''}" style="left:${70/SIW*100}%;top:${4/SIH*100}%"><b>${shop.who}</b><span id="npcSay" class="${shop.k==='herbes'&&garbHot()?'hype':''}">${esc(SHOPTALK.k===shop.k?SHOPTALK.txt:'')}</span><small>Clique sur le marchand pour discuter</small></div>
   <div class="shname">${shop.n}</div></div>`}
 const SHOP_AV={forge:'⚒️',armure:'🛡️',armes:'⚔️',mage:'🔮',herbes:'🌿',pals:'🐾',broc:'💰',ench:'🔮✨',artisan:'🔨'};
-document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act,id=+b.dataset.id;
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act,id=+b.dataset.id;if(cvAct(a,b))return;
   if(a==='goHerbes'){S.shop='herbes';shopIn='herbes';SHOPTALK.k=null;save();document.querySelector('[data-act=tab][data-tab=marche]').click();return}
   if(a==='claimShopQ'){const k=b.dataset.k;if(!sqDone(k))return;S.shopLv=S.shopLv||{};S.shopLv[k]=shopLv(k)+1;if(SHOP_ITEMS[k])S.market.shops[k]=genShop(k);if(k==='herbes')S.seedShop=null;save();renderHub();sfx.level();toast(`${SHOPS.find(x=>x.k===k).n} : réputation niveau ${shopLv(k)} !`);return}
   if(a==='seasonOk'){S.seasonNotice=null;save();$('#modal').hidden=true;renderHub();return}
@@ -2355,8 +2355,13 @@ function applyGfx(){const g=GFX();if(!R)return;try{R.renderer.setPixelRatio(Math
 function setRow(lbl,k,opts,cur){return `<div class="setrow"><span>${lbl}</span><div class="seg">${opts.map(([v,t])=>`<button class="btn sm ${String(cur)===String(v)?'primary':'ghost'}" data-act="setG" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`}
 
 /* ===== Notes de mise à jour (Réglages → Patch notes) ===== */
-const PATCH_V=113;let setTab='reg';
+const PATCH_V=114;let setTab='reg';
 const PATCHES=[
+ {v:114,t:'17 octobre 2026',n:"Mines d'or et vue du château",s:[
+  ['🗺 Vue du château',['Nouveau sous-onglet <b>Vue &amp; mines</b> dans « Mon château » : <b>toutes tes salles reliées sur une seule carte</b> (ponts entre les salles, prochaine salle à débloquer en île fantôme).','Caméra libre : <b>glisse</b> pour te déplacer, <b>molette ou pincement</b> pour zoomer, <b>A / E</b> ou ⟲ ⟳ pour tourner, 🗺 pour voir tout le château.','Clique sur une salle pour changer son agencement ou ouvrir le <b>mode construction</b> ; en le quittant, tu reviens sur la carte. Tu peux aussi agrandir le château depuis la carte.']],
+  ['⛏ Mines d’or',['Construis des <b>mines d’or</b> et pose-les dans tes salles : elles produisent de l’or en continu jusqu’à leur stock maximum.','Récolte-les <b>avec la main 🖐</b> en cliquant dessus dans la vue du château (ou « Tout récolter »).','Progression : 1re mine dès l’ouverture de « Mon château », mines niv. 2 au château niv. 4, 2e mine au niv. 5, mines niv. 3 au niv. 6, 3e mine au niv. 7, 4e mine au niv. 8, mines niv. 4 au niv. 10.','Niv. 1 : 40 or/h (stock 400) · niv. 2 : 90 or/h (1 080) · niv. 3 : 160 or/h (2 240) · niv. 4 : 260 or/h (4 160).']],
+  ['⚔️ Pillage des mines',['Les châteaux adverses ont aussi des mines : <b>frappe-les</b> pendant un raid, chaque coup fait jaillir de l’or (objectif « ⛏ Mines » dans le raid).','En ligne, un pillard qui casse ta mine emporte <b>50 % de son stock</b> : tu le vois dans tes attaques subies. Pense à récolter souvent !']]
+ ]},
  {v:113,t:'16 octobre 2026',n:'Petites corrections',s:[
   ['💎 Butin',['Les <b>cœurs légendaires</b> et les <b>runes uniques</b> lâchés par les boss suivent maintenant la même règle que les fragments runiques : ils tombent à partir du <b>niveau de joueur 15</b>.']],
   ['🔧 Corrections',['<b>Matchmaking</b> : l\'onglet ne plante plus quand la saison n\'est pas encore chargée (juste après le lancement, en jeu local) ; il affiche « Saison en cours de chargement… » puis se met à jour tout seul.','Le message « Partie en local » ne cache plus le titre de la fenêtre de création du héros : il s\'affiche après.','« Comment jouer » : « Ton héros attaque tout seul » (au lieu de « Ton chevalier »).']]
@@ -2586,7 +2591,7 @@ function statsMore(st){const A=st.aff||{},ass=skCls()==='assassin',eq=S.hero.equ
   return `<div class="smore"><h4>Attaque</h4><dl class="stats">${off}</dl><h4>Survie</h4><dl class="stats">${sur}</dl><h4>Utilitaire</h4><dl class="stats">${uti}</dl>
   ${sets?`<h4>Ensembles</h4><ul class="sbon">${sets}</ul>`:''}${my?`<h4>Pouvoirs mythiques</h4><ul class="sbon">${my}</ul>`:''}<p class="sub" style="margin:6px 0 0;font-size:12px">Survole (ou maintiens) une ligne pour le détail. Les lignes grisées n'ont encore aucun bonus.</p></div>`}
 const QTY_OPEN=new Set();document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('qty')){const i=+d.dataset.room;if(d.open)QTY_OPEN.add(i);else QTY_OPEN.delete(i)}},true);
-const CTABS=[['caserne','🏰 Caserne'],['boss','👑 Boss'],['pieges','⚙️ Atelier des pièges'],['salles','🏗 Création de salles']];
+const CTABS=[['vue','🗺 Vue & mines'],['caserne','🏰 Caserne'],['boss','👑 Boss'],['pieges','⚙️ Atelier des pièges'],['salles','🏗 Création de salles']];
 let RESET_ARM=null;
 function roomRefund(i){const r=S.my.rooms[i];let g=0;for(const k in r.mobs)g+=(r.mobs[k]||0)*(CREA[k]?CREA[k].price:0);for(const k in r.traps)g+=(r.traps[k]||0)*(TRAPS[k]?TRAPS[k].price:0);return g}
 function roomClear(i){const r=S.my.rooms[i],g=roomRefund(i);r.mobs={};r.traps={};r.pos=(r.pos||[]).filter(q=>q.b);S.hero.gold+=g;return g}
@@ -2596,9 +2601,10 @@ function viewChateau(){
   let h=`<div class="wrap"><div class="castle-head"><div><h2>${esc(S.my.name||'Ton château')} — niveau ${S.my.lvl}</h2><label class="sub" style="display:block;margin:6px 0">Nom du château <input id="cname" maxlength="28" value="${esc(S.my.name||'')}" placeholder="Ton château" style="font:inherit;padding:4px 10px;border-radius:8px;border:2px solid var(--line);background:#0b1428;color:var(--fg);margin-left:6px"></label>
   <p class="sub" style="margin:0">Défense estimée : <b>${fmt(P)}</b> · un pillard de ton niveau échoue environ <b>${pct} %</b> du temps.</p></div>
   <div class="actions">${S.my.validated?'<span class="chip ok">Validé — ouvert aux pillards</span>':'<span class="chip no">Non validé : teste-le</span>'}
-  <button class="btn ${S.my.validated?'':'primary'}" data-act="test">Tester mon château</button>
+  <button class="btn primary" data-act="cvOpen">🗺 Vue du château${mineTotal()>=1?` · 💰 ${fmt(mineTotal())}`:''}</button><button class="btn ${S.my.validated?'':'primary'}" data-act="test">Tester mon château</button>
   <button class="btn" data-act="upgrade" ${maxed||S.hero.gold<upCost()?'disabled':''}>${maxed?'Niveau maximum':`Agrandir (${fmt(upCost())} or)`}</button></div></div>
   <nav class="subtabs" role="tablist">${CTABS.map(([k,l])=>`<button role="tab" aria-selected="${ct===k}" class="${ct===k?'on':''}" data-act="ctab" data-k="${k}">${l}</button>`).join('')}</nav>`;
+  if(ct==='vue')return h+viewMines()+'</div>';
   if(ct==='caserne')return h+viewCaserne()+'</div>';
   if(ct==='boss')return h+viewBosses()+'</div>';
   if(ct==='pieges')return h+viewTrapTree()+'</div>';
@@ -2627,11 +2633,11 @@ const onlineBase=()=>(S.onlineApi||'').trim().replace(/\/$/,'')||'/api';
 async function oapi(p,body){if(AFK)throw new Error('Connexion coupée (inactivité)');const h={'content-type':'application/json'};if(S.online&&S.online.token)h.authorization='Bearer '+S.online.token;
   const r=await fetch(onlineBase()+p,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined});let d={};try{d=await r.json()}catch(e){}
   if(r.status===401&&S.online&&S.online.token&&p!=='/login'){S.online.token='';save();setTimeout(()=>{if(!GATE.on&&!(G&&G.active))accountGate()},50)}if(!r.ok)throw new Error(d.error||('Erreur serveur '+r.status));return d}
-function onlineSnap(){return {name:S.my.name||(n=>/^[aeiouyhàâäéèêëîïôöûü]/i.test(n)?"Château d'"+n:'Château de '+n)((S.online&&S.online.name)||'?'),lvl:S.my.lvl,style:S.style||'classique',power:castlePower(),rooms:genMyRooms(),mlv:Object.assign({},S.my.mlv),tUp:JSON.parse(JSON.stringify(S.my.tUp||{}))}}
-const onlineHash=()=>{const t=JSON.stringify(onlineSnap());let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h};
+function onlineSnap(){return {mines:mineSnap(true),name:S.my.name||(n=>/^[aeiouyhàâäéèêëîïôöûü]/i.test(n)?"Château d'"+n:'Château de '+n)((S.online&&S.online.name)||'?'),lvl:S.my.lvl,style:S.style||'classique',power:castlePower(),rooms:genMyRooms(),mlv:Object.assign({},S.my.mlv),tUp:JSON.parse(JSON.stringify(S.my.tUp||{}))}}
+const onlineHash=()=>{const t=JSON.stringify(Object.assign(onlineSnap(),{mines:mineSnap(false)}));let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h};
 function onlinePing(){ONL.up=null;oapi('/ping').then(()=>{ONL.up=true}).catch(()=>{ONL.up=false}).finally(()=>{if(tab==='online')renderHub();if(ONL.up&&S.online&&S.online.token)onlineLoad(true)})}
 function onlineApplySync(y){if('google' in y)ONL.google=!!y.google;if('email' in y){ONL.email=y.email;if(S.online)S.online.email=y.email||''}setTimeout(mailPrompt,800);ONL.me=y.me;ONL.events=y.events;ONL.raids=y.raids;if(y.top)ONL.top=y.top;ONL.cloud=y.save||null;ONL.lastTick=NOW();ONL.err='';
-  const c=y.claimed||{};if(c.n){if(c.gold){S.hero.gold+=c.gold;renderTop()}const w=c.n-(c.lost||0);ONL.msg=`🛡 ${c.n} attaque${c.n>1?'s':''} sur ton château pendant ton absence : ${w} repoussée${w>1?'s':''}${c.gold?` (+${fmt(c.gold)} or)`:''}.`;toast(ONL.msg);save()}}
+  const c=y.claimed||{};if(c.mine>0){mineTheft(c.mine);setTimeout(()=>toast(`⛏ Des pillards ont volé ${fmt(c.mine)} or dans tes mines !`),2900)}if(c.n){if(c.gold){S.hero.gold+=c.gold;renderTop()}const w=c.n-(c.lost||0);ONL.msg=`🛡 ${c.n} attaque${c.n>1?'s':''} sur ton château pendant ton absence : ${w} repoussée${w>1?'s':''}${c.gold?` (+${fmt(c.gold)} or)`:''}.`;toast(ONL.msg);save()}}
 function onlineLoad(force){if(!S.online||!S.online.token||ONL.busy)return;if(!force&&NOW()-ONL.t<20000)return;ONL.t=NOW();ONL.busy++;
   Promise.all([oapi('/opponents'),oapi('/sync')]).then(([o,y])=>{ONL.opps=o.opponents;if(S.online&&S.online.reroll){S.online.reroll=0;oPick(true)}onlineApplySync(y);cloudOffer();const bd=$('#oBadge');if(bd)bd.textContent=''})
   .catch(e=>{ONL.err=e.message}).finally(()=>{ONL.busy--;if(tab==='online')renderHub()})}
@@ -2643,10 +2649,10 @@ async function onlinePublish(){if(!S.my.validated){toast('Teste et valide d\'abo
   ONL.busy--;onlineLoad(true);renderHub()}
 async function onlineRaid(id){if(!heroReady())return;if(!window.THREE){toast('Le moteur 3D ne s\'est pas chargé.');return}ONL.busy++;renderHub();
   try{const d=await oapi('/raid/start',{target:id});const c=d.castle,o=d.owner||{};ONL.busy--;
-    openPrep({id:'p:'+id,name:o.name&&!c.name.includes(o.name)?`${c.name} (${o.name})`:c.name,lvl:c.lvl,theme:0,style:c.style,rooms:c.rooms,mlv:c.mlv,tUp:c.tUp,mine:false,online:{raid:d.raid,owner:o.name,ownerId:id,trophies:o.trophies}})}
+    openPrep({id:'p:'+id,name:o.name&&!c.name.includes(o.name)?`${c.name} (${o.name})`:c.name,lvl:c.lvl,theme:0,style:c.style,rooms:c.rooms,mlv:c.mlv,tUp:c.tUp,mines:onlineMines(c.mines,NOW()),mine:false,online:{raid:d.raid,owner:o.name,ownerId:id,trophies:o.trophies}})}
   catch(e){ONL.busy--;ONL.err=e.message;renderHub()}}
 function onlineRaidEnd(c,success,notes){if(S.online){S.online.isleSel=null;S.online.reroll=1}const o=c.online;notes.push(['good','🌐 Raid en ligne contre '+esc(o.owner||'?')+' : résultat envoyé au serveur…']);
-  oapi('/raid/end',{raid:o.raid,success,rooms:success?c.rooms.length:Math.max(0,G.roomIdx||0),kills:G.kills||0,hero:{cls:S.hero.cls,lvl:S.hero.lvl}})
+  oapi('/raid/end',{raid:o.raid,success,rooms:success?c.rooms.length:Math.max(0,G.roomIdx||0),kills:G.kills||0,mineGold:Math.round(G.mineGold||0),hero:{cls:S.hero.cls,lvl:S.hero.lvl}})
    .then(d=>{toast(`🏆 ${d.gain>=0?'+':''}${d.gain} trophées (total ${d.trophies})`);ONL.t=0;if(ONL.me)ONL.me.trophies=d.trophies})
    .catch(e=>toast('Raid en ligne : '+e.message))}
 const fmtAgo=t=>t?ago(t):'jamais';
@@ -2765,7 +2771,7 @@ function viewOnline(){
     <div class="bar" style="margin-top:8px"><button class="btn ${!S.online.pubAt||pubOld?'primary':''}" data-act="onPub" ${ONL.busy||!S.my.validated?'disabled':''}>📤 ${S.online.pubAt?'Mettre à jour mon château en ligne':'Publier mon château'}</button>
     <small class="sub">${!S.my.validated?'🔒 Teste et valide d\'abord ton château (Mon château → Tester).':S.online.pubAt?`Publié ${fmtAgo(S.online.pubAt)}${pubOld?' · <b style="color:#ffb070">tu as modifié ton château depuis</b>':''}`:'Pas encore publié : personne ne peut t\'attaquer.'}</small></div>${ONL.err?`<p class="onl-err">${esc(ONL.err)}</p>`:''}</section>`;
   const opps=`<div class="bar" style="margin:0 0 8px"><button class="btn sm" data-act="oReroll" ${S.hero.gold<isleRerollCost()||!(ONL.opps&&ONL.opps.length>5)?'disabled':''}>🌀 Autres adversaires (${isleRerollCost()} or)</button><small class="sub" style="margin:0">Les 5 îles changent aussi après chaque raid.</small></div>${oIslesHTML()}${ONL.opps&&ONL.opps.length?oIsleInfo():''}`;
-  const evs=(ONL.events||[]).slice(0,12).map(e=>`<li class="${e.success?'bad':'good'}">${e.success?'❌':'🛡'} <b>${esc(e.by)}</b> ${e.success?`a pillé ton coffre`:`a échoué (salle ${(e.rooms||0)+1})`} · ${e.trophies>=0?'+':''}${e.trophies} 🏆${e.gold?` · +${fmt(e.gold)} or`:''} <small>${ago(e.t)}</small></li>`).join('');
+  const evs=(ONL.events||[]).slice(0,12).map(e=>`<li class="${e.success?'bad':'good'}">${e.success?'❌':'🛡'} <b>${esc(e.by)}</b> ${e.success?`a pillé ton coffre`:`a échoué (salle ${(e.rooms||0)+1})`} · ${e.trophies>=0?'+':''}${e.trophies} 🏆${e.gold?` · +${fmt(e.gold)} or`:''}${e.mine?` · ⛏ −${fmt(e.mine)} or`:''} <small>${ago(e.t)}</small></li>`).join('');
   const rds=(ONL.raids||[]).slice(0,12).map(r=>`<li class="${r.success?'good':'bad'}">${r.success?'💰':'💀'} contre <b>${esc(r.target)}</b> · ${r.trophies>=0?'+':''}${r.trophies} 🏆 <small>${ago(r.t)}</small></li>`).join('');
   const top=(ONL.top||[]).slice(0,20).map((p,i)=>`<li class="${p.id===S.online.id?'meRow':''}"><span>${i+1}.</span><b>${esc(p.name)}</b><span>🏆 ${fmt(p.trophies)}</span></li>`).join('');
   return `<div class="wrap">${head}${mine}
@@ -2860,7 +2866,7 @@ const RS={f:$('#rsFill'),t:$('#rsTxt'),l:$('#rsLab')};
 
 const PHONE=()=>{try{return matchMedia('(pointer:coarse)').matches&&Math.min(innerWidth,innerHeight)<=600}catch(e){return false}};
 function phoneCam(){if(PHONE()&&S.camMode!=='iso'){S.camMode='iso';if(document.pointerLockElement)document.exitPointerLock()}}
-function startRaid(castle){phoneCam();JOY.used=false;JOY.id=null;JOY.on=false;setTimeout(joyIdle,2600);
+function startRaid(castle){G.mineGold=0;phoneCam();JOY.used=false;JOY.id=null;JOY.on=false;setTimeout(joyIdle,2600);
   G.edit=false;$('#raid').classList.remove('editing');$('#edit').hidden=true;if(R&&R.edCur)R.edCur.g.visible=false;if(R)R.hemi.intensity=.44;
   init3D();$('#modal').hidden=true;
   G.active=true;G.castle=castle;G.portrait=innerHeight>innerWidth*1.05;
@@ -2902,7 +2908,7 @@ function nextRoom(){
   const z=G.walls.length?(P?{x0:B.l+30,x1:B.r-30,y0:B.t+40,y1:B.b-.27*(B.b-B.t)}:{x0:B.l+.27*(B.r-B.l),x1:B.r-40,y0:B.t+30,y1:B.b-30}):(P?{x0:B.l+40,x1:B.r-40,y0:B.t+50,y1:H*.6}:{x0:W*.42,x1:B.r-60,y0:B.t+40,y1:B.b-40});
   const posL=(room.pos||[]).map(q=>Object.assign({used:false,src:q},q));const takePos=(k,isTrap)=>{const q=posL.find(p=>!p.used&&p.k===k&&!!p.t===!!isTrap);if(!q)return null;q.used=true;const pt=uv(q.u,q.v),f=blockedAt(pt.x,pt.y,22)?freePoint(pt.x,pt.y):pt;return {x:f.x,y:f.y,src:q.src}};G.takePos=takePos;
   room.mobs.forEach(k=>{let x,y,t=0;const pp=takePos(k,false);if(pp){x=pp.x;y=pp.y}else if(BOSSORDER.includes(k)){const br=(MOB[k]&&MOB[k].r||40)+14;let ok=false;for(const pad of [br*2.4,br*1.6,br])if(!ok)for(const f of [.72,.82,.62,.9,.55,.45]){for(const v of [.5,.35,.65,.22,.78,.12,.88]){const q=uv(f,v);if(!blockedAt(q.x,q.y,pad)){x=q.x;y=q.y;ok=true;break}}if(ok)break}if(!ok){x=P?W/2:W*.72;y=P?H*.3:H/2;const q=freePoint(x,y);x=q.x;y=q.y}}else do{x=z.x0+rng()*(z.x1-z.x0);y=z.y0+rng()*(z.y1-z.y0);t++}while(t<60&&(blockedAt(x,y,24)||Math.hypot(x-G.start.x,y-G.start.y)<260));const e=makeEnemy(k,x,y,G.castle.mlv?clamp(G.castle.mlv[k]||1,1,20):G.castle.lvl);if(pp)e.posSrc=pp.src;e.face=Math.atan2(G.start.y-y,G.start.x-x);collideB(e);G.enemies.push(e)});
-  placeProps(rng,LO.spots);keepPathOpen();
+  placeProps(rng,LO.spots);try{placeRaidMines()}catch(e){console.error(e)}keepPathOpen();
   G.roomTotal=G.enemies.length;buildRoom3D(rng);CAM.snap=true;G.fade=1;
   G.banner={txt:`Salle ${G.roomIdx+1} / ${G.castle.rooms.length}`,sub:(G.isLast?`${((G.enemies.find(x=>x.ai==='boss')||{}).bc||{name:'Le Gardien du trésor'}).name} vous attend`:(G.roomIdx===0?G.castle.name:''))+(lay!=='salle'?(G.isLast||G.roomIdx===0?' · ':'')+LAYOUTS[lay].n:''),t:2.2};
   if(room.mobs.length===0)roomCleared();
@@ -3011,11 +3017,11 @@ function navDir(o,tx,ty){const dx=tx-o.x,dy=ty-o.y,l=Math.hypot(dx,dy)||1;if((!G
   if(best<0){if(f[c]>=0&&(cellOf(o.x,o.y)!==c)){best=c}else return [dx/l,dy/l]}
   const bx=(best%NAV.cols+.5)*NAV.c,by=((best/NAV.cols|0)+.5)*NAV.c,ex=bx-o.x,ey=by-o.y,el=Math.hypot(ex,ey)||1;return [ex/el,ey/el]}
 function pathOpen(){buildNav();const f=fieldFrom(G.door.x,G.door.y);return f[nearFree(cellOf(G.start.x,G.start.y))]>=0}
-function keepPathOpen(){let g=0;while(!pathOpen()&&G.props.length&&g++<30){let worst=0,bd=-1;G.props.forEach((p,i)=>{const d=Math.min(...G.walls.map(w=>Math.hypot(p.x-clamp(p.x,w.x0,w.x1),p.y-clamp(p.y,w.y0,w.y1))),999);const sc=(p.k==='coffret'?0:1)*1000-d;if(sc>bd){bd=sc;worst=i}});G.props.splice(worst,1)}}
+function keepPathOpen(){let g=0;while(!pathOpen()&&G.props.length&&g++<30){let worst=0,bd=-1;G.props.forEach((p,i)=>{const d=Math.min(...G.walls.map(w=>Math.hypot(p.x-clamp(p.x,w.x0,w.x1),p.y-clamp(p.y,w.y0,w.y1))),999);const sc=(p.k==='coffret'?0:p.k==='mine'?.5:1)*1000-d;if(sc>bd){bd=sc;worst=i}});G.props.splice(worst,1)}}
 function freePoint(x,y){if(!blockedAt(x,y,14))return {x,y};const c=nearFree(cellOf(x,y));return {x:(c%NAV.cols+.5)*NAV.c,y:((c/NAV.cols|0)+.5)*NAV.c}}
 
 /* --- objets cassables, coffrets et objets de raid --- */
-const PROPS={tonneau:{hp:2,r:18},caisse:{hp:2,r:18},jarre:{hp:1,r:14},coffret:{hp:0,r:18}};
+const PROPS={tonneau:{hp:2,r:18},caisse:{hp:2,r:18},jarre:{hp:1,r:14},coffret:{hp:0,r:18},mine:{hp:6,r:34}};
 const RITEMS={bombe:{ic:'💣',n:'Bombe de poche',d:'Explose autour de toi'},foudre:{ic:'⚡',n:'Parchemin de foudre',d:'Foudroie les 4 ennemis les plus proches'},givre:{ic:'❄️',n:'Orbe de givre',d:'Gèle les ennemis proches 3 s'},rage:{ic:'💢',n:'Fiole de rage',d:'+40 % de dégâts pendant 15 s'},vent:{ic:'🪶',n:'Plume de vent',d:'+40 % de vitesse pendant 12 s'},pomme:{ic:'🍎',n:'Pomme dorée',d:'Rend 30 % des PV'}};
 const RKEYS=Object.keys(RITEMS);
 function placeProps(rng,spots){const isLast=G.isLast,n=Math.min(11,Math.round(((isLast?1:3)+Math.floor(rng()*(isLast?2:4)))*Math.max(1,G.W*G.H/(960*600)*.7)));let g=0;
@@ -3026,8 +3032,8 @@ function placeProps(rng,spots){const isLast=G.isLast,n=Math.min(11,Math.round(((
     if(!ok(p.x,p.y))continue;const k=['tonneau','tonneau','caisse','jarre','jarre'][Math.floor(rng()*5)];G.props.push(mkProp(k,p.x,p.y))}}
 function mkProp(k,x,y){const d=PROPS[k];return {k,x,y,r:d.r,hp:d.hp,dead:false,open:false,t:0,flash:0,rot:Math.random()*6}}
 function propsAoe(x,y,R){for(const p of G.props)if(!p.dead&&p.k!=='coffret'&&Math.hypot(p.x-x,p.y-y)<R+p.r)hitProp(p)}
-function hitProp(p){if(p.dead||p.k==='coffret')return;p.hp--;p.flash=.12;sfx.hit();{const hd=Math.atan2(p.y-G.hero.y,p.x-G.hero.x);spark(p.x,p.y,18,5,'255,235,190',{dir:hd,cone:.9,spd:260,up:90,life:.2,size:5,glow:true,streak:true});fxLight(p.x,p.y,20,0xffe0a0,1,.15);ring(p.x,p.y,4,p.r+14,.2,0xffe8b0)}spark(p.x,p.y,16,6,p.k==='jarre'?'200,120,80':'170,120,70',{spd:90,up:120,life:.4,size:5});if(p.hp<=0)breakProp(p)}
-function breakProp(p){p.dead=true;buildNav();sfx.kill();spark(p.x,p.y,18,18,p.k==='jarre'?'210,130,90':'160,110,60',{spd:170,up:200,life:.6,size:7});
+function hitProp(p){if(p.dead||p.k==='coffret')return;p.hp--;if(p.k==='mine')mineHit(p);p.flash=.12;sfx.hit();{const hd=Math.atan2(p.y-G.hero.y,p.x-G.hero.x);spark(p.x,p.y,18,5,'255,235,190',{dir:hd,cone:.9,spd:260,up:90,life:.2,size:5,glow:true,streak:true});fxLight(p.x,p.y,20,0xffe0a0,1,.15);ring(p.x,p.y,4,p.r+14,.2,0xffe8b0)}spark(p.x,p.y,16,6,p.k==='jarre'?'200,120,80':'170,120,70',{spd:90,up:120,life:.4,size:5});if(p.hp<=0)breakProp(p)}
+function breakProp(p){p.dead=true;buildNav();if(p.k==='mine'){mineBreak(p);return}sfx.kill();spark(p.x,p.y,18,18,p.k==='jarre'?'210,130,90':'160,110,60',{spd:170,up:200,life:.6,size:7});
   const L=G.castle.lvl;if(!G.castle.mine&&Math.random()<.6){const tot=(3+L*1.5)*rand(.7,1.3),n=clamp(Math.ceil(tot/4),1,4);for(let i=0;i<n;i++)G.coins.push({x:p.x,y:p.y,z:10,vz:rand(160,260),vx:rand(-80,80),vy:rand(-60,60),v:tot/n,t:0})}
   if(Math.random()<(p.k==='jarre'?.32:.22))dropRItem(p.x,p.y);
   if(Math.random()<.12){const h=G.hero,v=h.maxHp*.08;h.hp=Math.min(h.maxHp,h.hp+v);addText(p.x,p.y,30,'+'+Math.round(v)+' PV','#9cf08c',16)}}
@@ -3094,7 +3100,7 @@ function openEditor(i){
   resize();edBuild(false);edUI();G.last=performance.now();requestAnimationFrame(loop);
   if(forced)toast('Les salles en agencement aléatoire passent en « Salle à piliers » : tu peux le changer en bas.');
 }
-function closeEditor(){G.active=false;G.edit=false;$('#raid').classList.remove('editing');$('#edit').hidden=true;$('#raid').hidden=true;if(R&&R.edCur)R.edCur.g.visible=false;if(R)R.hemi.intensity=.44;renderHub()}
+function closeEditor(){G.active=false;G.edit=false;$('#raid').classList.remove('editing');$('#edit').hidden=true;$('#raid').hidden=true;if(R&&R.edCur)R.edCur.g.visible=false;if(R)R.hemi.intensity=.44;renderHub();if(CVW.fromEd){CVW.fromEd=false;CVW.keepCam=true;cvOpen()}}
 function edBuild(keep){const cx=CAM.x,cz=CAM.z,hx=G.hero.x,hy=G.hero.y;
   G.castle={id:'mine',name:S.my.name||'Ton château',lvl:S.my.lvl,theme:5,rooms:genMyRooms(),mine:true,mlv:Object.assign({},S.my.mlv)};
   G.roomIdx=ED.room-1;nextRoom();G.props=[];G.banner=null;G.fade=0;
@@ -5019,6 +5025,7 @@ function render3D(dt){
       if(o.k==='tonneau'){M.w=T(0x8a5a2e);M.b=T(0x3a3036);g.add(part(GEO.cyl,M.w,[0,.6,0],[.62,1.2,.62]));for(const y of[.25,.95])g.add(part(GEO.cyl,M.b,[0,y,0],[.66,.12,.66],{out:false}))}
       else if(o.k==='caisse'){M.w=T(0xb07a3e);M.b=T(0x6a4422);g.add(part(GEO.box,M.w,[0,.5,0],[1,1,1]));for(const s of[-1,1])g.add(part(GEO.box,M.b,[s*.44,.5,0],[.12,1.02,1.02],{out:false}))}
       else if(o.k==='jarre'){M.w=T(0xc0704a);M.b=T(0x8a4a2e);g.add(part(GEO.sph,M.w,[0,.5,0],[.5,.55,.5]));g.add(part(GEO.cyl,M.b,[0,1.02,0],[.24,.22,.24],{out:false}))}
+      else if(o.k==='mine'){g.rotation.y=o.rot;return mineModel(g,M,o.ml||1)}
       else{M.w=T(0x7a4a22);M.b=T(0xffc83a);g.add(part(GEO.box,M.w,[0,.32,0],[1.1,.64,.75]));g.add(part(GEO.box,M.b,[0,.33,.39],[.2,.24,.04],{out:false}));const lid=new THREE.Group();lid.position.set(0,.64,-.37);g.add(lid);lid.add(part(GEO.box,M.w,[0,.08,.37],[1.12,.18,.77]));lid.add(part(GEO.box,M.b,[0,.08,.37],[.16,.2,.79],{out:false}));return {g,lid,mats:mats(M)}}
       g.rotation.y=o.rot;return {g,mats:mats(M)}});
     m.g.position.set(p.x*U,0,p.y*U);setFlash(m,p.flash>0);if(m.lid)m.lid.rotation.x=p.open?-Math.min(1.8,p.t*6):0}
@@ -5124,8 +5131,8 @@ function hudExtra(){const alive=G.enemies.filter(e=>!e.dead),boss=alive.find(e=>
   setTxt(HX.xp,'xp',fmt(G.xpGot));
   const target=G.castle.rooms.length*55,best=S.best[G.castle.id];setTxt(HX.best,'best',fmtTime(best||target));
   const st=G.time<(best||target)?3:G.time<(best||target)*1.5?2:1;if(lastHud.st!==st){lastHud.st=st;[...HX.stars].forEach((e,i)=>e.classList.toggle('on',i<st))}
-  const cof=G.props.filter(p=>p.k==='coffret'),co=cof.filter(p=>p.open).length,br=G.props.filter(p=>p.k!=='coffret'),bk=br.filter(p=>p.dead).length;
-  const ob=G.castle.training?trHud():(`<li class="${G.cleared?'ok':''}">Vider la salle${G.cleared?'':` (${alive.length})`}</li>`+(cof.length?`<li class="${co===cof.length?'ok':''}">Coffrets ${co}/${cof.length}</li>`:'')+(br.length?`<li class="${bk===br.length?'ok':''}">Objets cassés ${bk}/${br.length}</li>`:'')+`<li class="${G.time<target?'ok':''}">Pillage éclair (${fmtTime(target)})</li>`);
+  const cof=G.props.filter(p=>p.k==='coffret'),co=cof.filter(p=>p.open).length,br=G.props.filter(p=>p.k!=='coffret'&&p.k!=='mine'),bk=br.filter(p=>p.dead).length,mn=G.props.filter(p=>p.k==='mine'),mk=mn.filter(p=>p.dead).length;
+  const ob=G.castle.training?trHud():(`<li class="${G.cleared?'ok':''}">Vider la salle${G.cleared?'':` (${alive.length})`}</li>`+(cof.length?`<li class="${co===cof.length?'ok':''}">Coffrets ${co}/${cof.length}</li>`:'')+(br.length?`<li class="${bk===br.length?'ok':''}">Objets cassés ${bk}/${br.length}</li>`:'')+(mn.length&&!G.castle.mine?`<li class="${mk===mn.length?'ok':''}">⛏ Mines ${mk}/${mn.length}</li>`:'')+`<li class="${G.time<target?'ok':''}">Pillage éclair (${fmtTime(target)})</li>`);
   if(lastHud.ob!==ob){lastHud.ob=ob;HX.objs.innerHTML=ob}
   if((R.frame&3)===0)drawMinimap()}
 function drawMinimap(){const cv=HX.mm,c=cv.getContext('2d'),S0=cv.width;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,S0,S0);
@@ -5175,7 +5182,7 @@ function showResults(success,abandon){
       S.cleared[c.id]=true;{const cl=heroCl(),i=RIVALS.findIndex(r=>r.id===c.id);if(i>=0&&!cl[c.id]){cl[c.id]=1;const nx=RIVALS[i+1];if(nx)notes.push(['good',`🔓 Nouveau château débloqué : ${nx.name} (niv. ${nx.lvl})`])}}title='Château pillé !';sub=`Tu as vidé le coffre de ${c.name}.`}
     else{gold=gold*.5;title=abandon?'Raid abandonné':'Ton héros est tombé';sub="Tu gardes la moitié de l'or ramassé, l'expérience et les sacs déjà récupérés. Le coffre, lui, reste fermé."}}
   if(fail&&!abandon&&!c.mine&&S.hero.cls!=='recrue'){S.ko=S.ko||{};S.ko[S.hero.cls]=NOW()+KO_MS;notes.push(['bad',`Ton ${CL().name} est blessé : il se repose 10 minutes. Joue un autre héros ou la Recrue en attendant.`])}
-  {const tx=[];for(const l in G.seedsGot){const n=Math.round(G.seedsGot[l]*(fail?.5:1));if(n){S.seeds[l]=(S.seeds[l]||0)+n;tx.push(n+' × niv. '+l)}}if(tx.length)notes.push(['good','Graines trouvées : '+tx.join(', ')+". Plante-les dans l'Alchimie."])}if(c.arena)arenaResult(success,notes);if(c.online)onlineRaidEnd(c,success,notes);setTimeout(()=>cloudSave(false),1500);if(!c.mine){const rc=success?c.rooms.length:Math.max(0,G.roomIdx),bpp=bpAdd(rc*10+(success?30:0)+(success&&c.arena?15:0)+(G.kills||0));if(bpp)notes.push(['good',`🎟 Passe de combat : +${bpp} points`])}if(!c.mine){qProg('kills',G.kills);cnt('kills',G.kills);if(G.pal&&success)cnt('palRaids');if(success&&!c.arena){qProg('raids',1);S.stats.raids++}if(success&&c.arena)qProg('arena',1)}gold=Math.round(gold*(1+.06*tr('fortune'))*(S.pals.active==='boulet'?1.06:1));S.hero.gold+=gold;const ups=xp?addXp(xp):0;
+  {const tx=[];for(const l in G.seedsGot){const n=Math.round(G.seedsGot[l]*(fail?.5:1));if(n){S.seeds[l]=(S.seeds[l]||0)+n;tx.push(n+' × niv. '+l)}}if(tx.length)notes.push(['good','Graines trouvées : '+tx.join(', ')+". Plante-les dans l'Alchimie."])}if(G.mineGold>0&&!c.mine)notes.push(['good',`⛏ Or arraché aux mines : ${fmt(Math.round(G.mineGold*(fail?.5:1)))} (compté dans l'or)`]);if(c.arena)arenaResult(success,notes);if(c.online)onlineRaidEnd(c,success,notes);setTimeout(()=>cloudSave(false),1500);if(!c.mine){const rc=success?c.rooms.length:Math.max(0,G.roomIdx),bpp=bpAdd(rc*10+(success?30:0)+(success&&c.arena?15:0)+(G.kills||0));if(bpp)notes.push(['good',`🎟 Passe de combat : +${bpp} points`])}if(!c.mine){qProg('kills',G.kills);cnt('kills',G.kills);if(G.pal&&success)cnt('palRaids');if(success&&!c.arena){qProg('raids',1);S.stats.raids++}if(success&&c.arena)qProg('arena',1)}gold=Math.round(gold*(1+.06*tr('fortune'))*(S.pals.active==='boulet'?1.06:1));S.hero.gold+=gold;const ups=xp?addXp(xp):0;
   if(G.garbUsed){G.garbUsed=0;const g=garbS();if(!g.gone){g.gone=1;g.own=0;notes.push(['bad',"🫙 Mère Sauge retire l'Eau de Garbourg de la vente : « Bon… la recette n'était pas si bonne que ça. » La fiole disparaît de ton stock."])}}
   {const acc={n:0,g:0,f:0,fg:0};for(const it of items)bagAdd(it,acc);if(acc.n)notes.push(['',`Vente automatique : ${acc.n} objet(s) vendu(s) pour ${fmt(acc.g)} or.`]);if(acc.f)notes.push(['',`Sac plein : ${acc.f} objet(s) vendu(s) pour ${fmt(acc.fg)} or.`])}
   if(S.hero.bag.length>bagMax()){S.hero.bag.sort((a,b)=>b.value-a.value);const extra=S.hero.bag.splice(bagMax());let sold=0;for(const it of extra)sold+=it.value;S.hero.gold+=sold;notes.push(['',`Sac plein : ${extra.length} objet(s) vendu(s) automatiquement pour ${sold} or.`])}
@@ -5192,10 +5199,327 @@ function showResults(success,abandon){
   $('#modal').hidden=false;mb.querySelector('.btn.primary').focus();renderTop();
 }
 
+/* ================= Mines d'or et vue du château (v114) =================
+   Les mines se placent dans les salles depuis la « Vue du château » (toutes les salles reliées
+   sur une seule carte, caméra libre, curseur en forme de main pour récolter).
+   En raid, les mines adverses sont des objets à casser : chaque coup fait jaillir de l'or. */
+const MINE_L=[null,{r:40,cap:400,up:0},{r:90,cap:1080,up:1000},{r:160,cap:2240,up:2500},{r:260,cap:4160,up:6000}];
+const MINE_BUILD=[0,1200,2500,4000];           // prix de la 1re, 2e, 3e et 4e mine
+const MINE_SLOT_AT=[1,5,7,8];                   // niveau du château pour la 1re… 4e mine
+const MINE_LV_AT=[0,1,4,6,10];                  // niveau du château pour une mine niv. 1… 4
+const MINE_STEAL=.5;                            // part du stock qu'un pillard emporte
+const mineSlots=(L=S.my.lvl)=>MINE_SLOT_AT.filter(x=>L>=x).length;
+const mineMaxLv=(L=S.my.lvl)=>MINE_LV_AT.reduce((a,x,i)=>i&&L>=x?i:a,1);
+function myMines(){if(!Array.isArray(S.my.mines))S.my.mines=[];return S.my.mines}
+function mineStock(m,now){if(!m)return 0;const d=MINE_L[m.l]||MINE_L[1];if(m.r<0||!m.t)return Math.min(d.cap,Math.floor(m.s||0));return Math.min(d.cap,Math.floor((m.s||0)+Math.max(0,(now||NOW())-m.t)/3600e3*d.r))}
+function mineFreeze(m){m.s=mineStock(m);m.t=m.r>=0?NOW():0}
+function mineFullIn(m){const d=MINE_L[m.l],st=mineStock(m);if(m.r<0)return -1;return st>=d.cap?0:(d.cap-st)/d.r*3600e3}
+const mineDur=ms=>{const m=Math.ceil(ms/60e3);return m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'')};
+function mineCollect(m,silent){const g=mineStock(m);if(g<1)return 0;S.hero.gold+=g;m.s=0;m.t=NOW();save();renderTop();if(!silent){sfx.coin();setTimeout(()=>sfx.coin(),90)}return g}
+function mineBuild(){const ms=myMines();if(ms.length>=mineSlots())return;const c=MINE_BUILD[ms.length]||0;if(S.hero.gold<c)return;S.hero.gold-=c;
+  ms.push({id:(S.nextId=(S.nextId||2)+1),l:1,r:-1,u:.5,v:.5,s:0,t:0});save();renderTop();sfx.level();return ms[ms.length-1]}
+function mineUp(m){if(!m||m.l>=mineMaxLv()||m.l>=4)return;const c=MINE_L[m.l+1].up;if(S.hero.gold<c)return;S.hero.gold-=c;mineFreeze(m);m.l++;save();renderTop();sfx.level();toast(`⛏ Mine niveau ${m.l} : ${MINE_L[m.l].r} or/h, jusqu'à ${fmt(MINE_L[m.l].cap)} or`);return true}
+// vol par des joueurs en ligne pendant ton absence
+function mineTheft(g){let left=Math.max(0,g|0);const ms=myMines().filter(m=>m.r>=0).sort((a,b)=>mineStock(b)-mineStock(a));for(const m of ms){if(left<=0)break;const st=mineStock(m),k=Math.min(st,left);m.s=st-k;m.t=NOW();left-=k}save()}
+// mines publiées avec le château (s et t servent à estimer le stock au moment du raid)
+function mineSnap(full){return myMines().filter(m=>m.r>=0&&m.r<roomCount()).map(m=>full?{r:m.r,u:m.u,v:m.v,l:m.l,s:mineStock(m),t:NOW()}:{r:m.r,u:+m.u.toFixed(3),v:+m.v.toFixed(3),l:m.l})}
+
+/* --- mines dans les raids --- */
+function aiMines(c){const L=c.lvl||1,rng=mulberry32(hashStr((c.id||c.name||'x')+':mines')),n=1+(L>=12)+(L>=30)+(L>=45),nr=(c.rooms||[]).length||1,out=[];
+  const l=clamp(1+Math.floor(L/12),1,4),gold=Math.round((20+8*L)*(.8+.2*l));
+  for(let i=0;i<n;i++)out.push({r:Math.floor(rng()*nr),u:.3+rng()*.55,v:.15+rng()*.7,l,gold:Math.round(gold*(.8+rng()*.4))});return out}
+function raidMines(idx){const c=G.castle;if(!c||c.training)return [];
+  if(c.mines===undefined){if(c.mine)c.mines=mineSnap(false).map(m=>Object.assign(m,{gold:0}));
+    else if(c.online)c.mines=[];else c.mines=aiMines(c)}
+  return (c.mines||[]).map((m,i)=>Object.assign({i},m)).filter(m=>m.r===idx)}
+function onlineMines(arr,now){return (Array.isArray(arr)?arr:[]).slice(0,4).map(m=>{const l=clamp(m.l|0,1,4),d=MINE_L[l],st=Math.min(d.cap,(+m.s||0)+Math.max(0,now-(+m.t||now))/3600e3*d.r);return {r:m.r|0,u:+m.u||.5,v:+m.v||.5,l,gold:Math.floor(st*MINE_STEAL)}})}
+function placeRaidMines(){for(const m of raidMines(G.roomIdx)){const p=uv(clamp(m.u,.05,.95),clamp(m.v,.05,.95)),q=blockedAt(p.x,p.y,34)?freePoint(p.x,p.y):p;
+    G.props=G.props.filter(o=>o.k==='coffret'||Math.hypot(o.x-q.x,o.y-q.y)>70);
+    const hp=4+2*m.l;G.props.push(Object.assign(mkProp('mine',q.x,q.y),{hp,hpMax:hp,ml:m.l,gold:m.gold||0,left:m.gold||0,mi:m.i,rot:(m.u*7+m.v*3)%6.28}))}}
+function mineHit(p){if(p.hp<=0)return;const v=Math.floor((p.gold||0)/(p.hpMax||1));if(v>0)mineGold(p,v);
+  spark(p.x,p.y,26,10,'255,214,90',{spd:200,up:240,life:.6,size:6,glow:true})}
+function mineGold(p,v){v=Math.min(v,p.left);if(v<=0)return;p.left-=v;G.mineGold=(G.mineGold||0)+v;const n=clamp(Math.ceil(v/8),1,4);
+  for(let i=0;i<n;i++)G.coins.push({x:p.x,y:p.y,z:20,vz:rand(220,340),vx:rand(-120,120),vy:rand(-90,90),v:v/n,t:0});addText(p.x,p.y,60,'+'+fmt(v)+' or','#ffd34a',18);sfx.coin()}
+function mineBreak(p){sfx.kill();spark(p.x,p.y,30,28,'255,214,90',{spd:220,up:260,life:.8,size:8,glow:true});spark(p.x,p.y,18,16,'120,110,120',{spd:160,up:180,life:.6,size:7});
+  G.shake=Math.max(G.shake||0,.25);if(p.left>0)mineGold(p,p.left);if(!G.castle.mine)addText(p.x,p.y,90,'⛏ Mine pillée !','#ffe08a',20)}
+
+/* --- modèle 3D d'une mine d'or (roche, filon, étais en bois, wagonnet) --- */
+function mineModel(g,M,l){M.w=T(0x8a5a2e);M.r=T(0x9a8e80);M.d=T(0x6e6258);const gold=BASIC(0xffcf3a),gl=BASIC(0xfff2a8),dark=BASIC(0x120c08);
+  const s=1.3+.14*(l-1);const k=new THREE.Group();k.scale.setScalar(s);g.add(k);
+  k.add(part(GEO.ico||GEO.sph,M.r,[0,.7,-.25],[1.5,1.2,1.1]));k.add(part(GEO.ico||GEO.sph,M.d,[-.85,.45,.15],[.8,.75,.7]));k.add(part(GEO.ico||GEO.sph,M.r,[.9,.4,.1],[.7,.6,.65]));
+  // galerie : ouverture sombre et étais
+  k.add(part(GEO.box,dark,[0,.55,.62],[.9,1.05,.12],{out:false,shadow:false}));
+  for(const x of[-.55,.55])k.add(part(GEO.box,M.w,[x,.6,.7],[.16,1.25,.16]));k.add(part(GEO.box,M.w,[0,1.25,.7],[1.4,.16,.18]));
+  // filon d'or
+  const nug=[[-.5,1.3,.1],[.35,1.55,-.1],[.95,.85,.35],[-1.05,.8,.4],[.1,1.75,-.45],[.6,1.2,.45]];
+  nug.slice(0,3+l).forEach((q,i)=>k.add(part(GEO.ico||GEO.sph,i%2?gold:gl,q,[.22,.22,.22],{out:false,shadow:false})));
+  // wagonnet rempli d'or
+  const cart=new THREE.Group();cart.position.set(1.15,0,1.05);cart.rotation.y=-.5;k.add(cart);
+  cart.add(part(GEO.box,M.w,[0,.42,0],[.9,.42,.6]));cart.add(part(GEO.sph,gold,[0,.66,0],[.4,.2,.27],{out:false}));
+  for(const x of[-.3,.3])for(const z of[-.32,.32])cart.add(part(GEO.cyl,M.d,[x,.17,z],[.17,.08,.17],{out:false,rot:[Math.PI/2,0,0]}));
+  // fanion du niveau
+  const pole=part(GEO.box,M.w,[-1.15,1.2,.55],[.07,2.4,.07]);k.add(pole);const fl=part(GEO.box,BASIC([0,0xc8a060,0x9ad0ff,0xc89aff,0xffd34a][l]),[-.85,2.15,.55],[.55,.34,.04],{out:false});k.add(fl);
+  return {g,mats:mats(M)}}
+
+/* --- vue du château : toutes les salles reliées sur une seule carte --- */
+const CVW={on:false,root:null,rooms:[],mines:[],box:null,c:{x:0,z:0,d:80,th:0},t:{x:0,z:0,d:80,th:0},el:.92,ptrs:new Map(),drag:null,pinch:null,sel:null,place:null,hover:null,ghost:null,last:0,raf:0,keys:new Set(),bak:null,lbl:[]};
+const HAND=(e,x=10,y=4)=>`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><text x='2' y='28' font-size='26'>${e}</text></svg>`)}") ${x} ${y}`;
+(function(){const st=document.createElement('style');st.textContent=`
+#raid.cview .hud-top,#raid.cview .hud-bot,#raid.cview #edit,#raid.cview #ov,#raid.cview #joy,#raid.cview #xhair{display:none!important}
+#cvui{position:absolute;inset:0;z-index:5;cursor:${HAND('🖐️')},grab;touch-action:none;user-select:none;-webkit-user-select:none}
+#cvui.grab{cursor:${HAND('✊')},grabbing}#cvui.over{cursor:${HAND('👆',12,2)},pointer}#cvui.placing{cursor:${HAND('📍',12,26)},crosshair}
+#cvui .cvp{cursor:default}
+.cv-top{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;gap:10px;align-items:center;pointer-events:none}
+.cv-top>*{pointer-events:auto}.cv-title{flex:1;min-width:0;text-shadow:0 2px 6px #000}.cv-title b{font:24px var(--fd,'Lilita One');color:#ffe08a;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cv-title small{color:#e8eefc;font-weight:800}
+.cv-chip{background:linear-gradient(180deg,var(--panel-2,#24345a),var(--panel,#16213c));border:3px solid var(--frame,#c99a3a);border-radius:12px;padding:6px 12px;font-weight:900;white-space:nowrap}
+.cv-tools{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 64px);display:flex;flex-direction:column;gap:6px}
+.cv-tools .btn{min-width:44px;padding:6px 0;font-size:18px}
+.cv-panel{position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:min(360px,calc(100% - 24px));max-height:min(62vh,560px);overflow:auto;background:linear-gradient(180deg,var(--panel-2,#24345a),var(--panel,#16213c));border:3px solid var(--frame,#c99a3a);border-radius:16px;padding:12px;box-shadow:0 10px 30px #0008}
+.cv-panel h3{margin:0 0 6px;font:20px var(--fd,'Lilita One');color:#ffe08a}.cv-panel .sub{margin:0 0 8px}
+.cv-panel.min{max-height:none}.cv-panel.min .cvbody{display:none}
+.mcard{border:2px solid var(--line,#33456e);border-radius:12px;padding:8px 10px;margin:6px 0;background:#0b1428aa}
+.mcard.on{border-color:#ffd34a;box-shadow:0 0 0 2px #ffd34a55}.mcard.lock{opacity:.6}
+.mcard .mh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.mcard .mh b{font-size:15px}.mcard small{color:var(--muted,#9fb0d0)}
+.mbar{height:9px;border-radius:6px;background:#0006;overflow:hidden;margin:6px 0 4px;border:1px solid #0008}.mbar i{display:block;height:100%;background:linear-gradient(90deg,#c99a2a,#ffe27a)}.mbar.full i{background:linear-gradient(90deg,#ff9a3a,#ffd34a)}
+.mcard .bar{gap:6px;flex-wrap:wrap;margin-top:6px}.mcard .btn{padding:4px 10px;font-size:13px}
+.cv-hint{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:300px;text-align:right;font-weight:800;font-size:12px;color:#e8eefc;text-shadow:0 1px 4px #000;pointer-events:none}
+#cvLbl{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.cvl{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;font-weight:900;text-shadow:0 2px 4px #000;pointer-events:none}
+.cvl.room{font:18px var(--fd,'Lilita One');color:#fff2c8;background:#0b1428b0;border:2px solid #c99a3a;border-radius:10px;padding:2px 10px}
+.cvl.room.lock{color:#c8d0e0;border-color:#5a6680}
+.cvl.mine{background:#0b1428d0;border:2px solid #ffd34a;border-radius:999px;padding:1px 9px;font-size:13px;color:#ffe27a}
+.cvl.mine.full{background:#5a3a08e0;border-color:#ffb02a;color:#fff;animation:cvpulse 1s infinite}
+.cvl.mine.empty{opacity:.7;border-color:#8a7a50}
+@keyframes cvpulse{50%{transform:translate(-50%,-100%) scale(1.12)}}
+.cvfly{position:fixed;z-index:60;font-size:22px;pointer-events:none;transition:transform .7s cubic-bezier(.5,-.3,.7,1),opacity .7s}
+.cvgain{position:absolute;transform:translate(-50%,-100%);font:22px var(--fd,'Lilita One');color:#ffe27a;text-shadow:0 2px 4px #000;pointer-events:none;animation:cvup 1.3s forwards}
+@keyframes cvup{to{transform:translate(-50%,-260%);opacity:0}}
+@media (max-width:640px){.cv-panel{max-height:44vh}.cv-hint{display:none}.cv-top{flex-wrap:wrap;gap:6px}.cv-title{order:9;flex-basis:100%}.cv-title b{font-size:18px}.cv-title small{display:none}.cv-top .btn{padding:6px 10px;font-size:14px}.cv-up-t{display:none}.cv-tools{top:calc(env(safe-area-inset-top,0px) + 96px)}}
+`;document.head.appendChild(st)})();
+
+function cvOpen(){
+  if(!window.THREE){toast('Le moteur 3D ne s\'est pas chargé.');return}
+  const n=roomCount();let forced=false;for(let j=0;j<n;j++){const r=S.my.rooms[j];if(!r.lay||r.lay==='auto'){r.lay='salle';forced=true}try{edAutoPlace(j)}catch(e){}}save();
+  init3D();$('#modal').hidden=true;
+  const raid=$('#raid');raid.hidden=false;raid.classList.add('cview');
+  if(!$('#cvui')){const d=document.createElement('div');d.id='cvui';raid.appendChild(d);cvBind(d)}
+  $('#cvui').hidden=false;
+  CVW.on=true;CVW.sel=null;CVW.place=null;CVW.hover=null;if(!CVW.keepCam)CVW.min=innerWidth<640;CVW.bak={far:R.camP.far,fov:R.camP.fov,near:R.camP.near,hemi:R.hemi.intensity};
+  resize();cvBuild();cvUI();
+  const r0=CVW.rooms[0];if(r0&&!CVW.keepCam){CVW.t.x=CVW.c.x=r0.cx;CVW.t.z=CVW.c.z=r0.cz;CVW.t.d=CVW.c.d=clamp(Math.max(r0.w,r0.h)*1.25,45,140);CVW.t.th=CVW.c.th=0}
+  CVW.keepCam=false;CVW.last=performance.now();cancelAnimationFrame(CVW.raf);CVW.raf=requestAnimationFrame(cvLoop);
+  if(forced)toast('Les salles en agencement aléatoire passent en « Salle à piliers » : tu peux le changer en cliquant sur la salle.');
+}
+function cvClose(back){CVW.on=false;cancelAnimationFrame(CVW.raf);cvClear();
+  const raid=$('#raid');raid.classList.remove('cview');raid.hidden=true;const ui=$('#cvui');if(ui)ui.hidden=true;
+  if(CVW.bak){R.camP.far=CVW.bak.far;R.camP.fov=CVW.bak.fov;R.camP.near=CVW.bak.near;R.camP.updateProjectionMatrix();R.hemi.intensity=CVW.bak.hemi}
+  G.active=false;G.edit=false;R.sun.castShadow=true;CVW.far=null;if(R.scene.fog){R.scene.fog.near=70;R.scene.fog.far=150}
+  if(back!==false){tab='chateau';renderHub()}}
+function cvClear(){CVW.small=[];if(CVW.root){R.scene.remove(CVW.root);disposeObj(CVW.root);CVW.root=null}CVW.rooms=[];CVW.mines=[];CVW.ghost=null;const l=$('#cvLbl');if(l)l.innerHTML='';CVW.lbl=[]}
+
+function cvBuild(){
+  cvClear();const root=new THREE.Group();R.scene.add(root);CVW.root=root;
+  const n=roomCount(),portBak=G.portrait;G.portrait=false;
+  Object.assign(G,{active:false,edit:true,portrait:false,time:0,goldGot:0,xpGot:0,itemsGot:[],kills:0,seedsGot:{},frags:[],god:false,matGot:{rune:0,heart:0},ally:null,rbag:[],bolts:[],potions:0,over:false,ending:false,won:false,shake:0,roomIdx:-1,leaving:0,pal:null});
+  G.hero={x:0,y:0,r:16,ht:44,hp:1,maxHp:1,atk:0,def:0,crit:0,atk0:0,res:0,resMax:1,buffF:0,buffS:0,shieldV:0,spd:0,rng:0,cls:CLX(),face:0,atkCd:99,swing:0,invul:0,flash:0,dash:0,dvx:0,dvy:0,spinT:0,cds:{spin:0,dash:0,pot:0,sk3:0,ult:0},moveTarget:null,focus:null,walk:0,hitSet:null};
+  G.castle={id:'mine',name:S.my.name||'Ton château',lvl:S.my.lvl,theme:5,rooms:genMyRooms(),mine:true,mlv:Object.assign({},S.my.mlv),mines:[]};
+  let ox=0,oz=0,prev=null;
+  for(let i=0;i<n;i++){
+    G.roomIdx=i-1;nextRoom();G.banner=null;G.fade=0;G.enemies.forEach(e=>{e.awake=false;e.face=Math.PI/2+.4});
+    const mp=myMines().filter(m=>m.r===i).map(m=>{const q=uv(m.u,m.v);return Object.assign(mkProp('mine',q.x,q.y),{ml:m.l,rot:.35,mid:m.id,big:1})});
+    G.props=G.props.filter(o=>!mp.some(p=>Math.hypot(o.x-p.x,o.y-p.y)<70)).concat(mp);
+    if(i<n-1){G.door.open=true;G.door.lift=1}
+    render3D(0);
+    for(const o of R.cutList||[]){const u=o.userData;if(u.oy!==undefined){o.position.y=u.oy;o.scale.y=u.osy;o.visible=u.ov}}
+    const grp=new THREE.Group();
+    while(R.room.children.length){const c=R.room.children[0];R.room.remove(c);if(c===R.fpsDeco||c===R.dust){disposeObj(c);continue}grp.add(c)}
+    for(const o of R.outdoor||[])o.visible=true;
+    const mines=[];
+    for(const o of [...R.live]){if(o===G.hero||!o._m)continue;const g=o._m.g;R.dyn.remove(g);R.live.delete(o);o._m=null;if(g.visible===false){disposeObj(g);continue}grp.add(g);if(o.k!=='mine')(CVW.small=CVW.small||[]).push(g);
+      if(o.k==='mine'){g.scale.setScalar(1.35);const hit=new THREE.Mesh(GEO.sph,new THREE.MeshBasicMaterial({visible:false}));hit.scale.setScalar(3.6*(1+.12*((o.ml||1)-1)));hit.position.set(o.x*U,1.6,o.y*U);hit.userData.mid=o.mid;grp.add(hit);mines.push({id:o.mid,g,hit,x:o.x,y:o.y,room:i})}}
+    // position de la salle : son entrée prolonge la porte de la salle précédente
+    const W=G.W*U,H=G.H*U,sz=G.start.y*U,dz=G.door.y*U;
+    if(prev){ox=prev.ox+prev.W+11;oz=prev.oz+prev.dz-sz}
+    grp.position.set(ox,0,oz);root.add(grp);
+    const rec={i,grp,ox,oz,W,H,B:Object.assign({},G.B),walls:G.walls.slice(),pillars:G.pillars.slice(),start:Object.assign({},G.start),door:Object.assign({},G.door),Wp:G.W,Hp:G.H,lay:G.lay,dz,sz,cx:ox+W/2,cz:oz+H/2,w:W,h:H,pos:(S.my.rooms[i].pos||[]).map(q=>uv(q.u,q.v))};
+    for(const m of mines){m.wx=ox+m.x*U;m.wz=oz+m.y*U;m.rec=rec;CVW.mines.push(m)}
+    // arche d'entrée sur le mur de gauche
+    if(prev){cvArch(grp,G.B.l*U/2,sz)}
+    if(prev)cvBridge(root,prev.ox+prev.W-.4,prev.oz+prev.dz,ox+.4);
+    CVW.rooms.push(rec);prev=rec;
+  }
+  // prochaine salle à débloquer : île fantôme
+  if(n<5&&prev){const x0=prev.ox+prev.W+11,lv=lvlForRooms(n+1),w=40,h=26,z0=prev.oz+prev.dz-h/2;cvGhost(root,x0,z0,w,h);cvBridge(root,prev.ox+prev.W-.4,prev.oz+prev.dz,x0+1,true);
+    CVW.rooms.push({i:n,lock:true,lv,ox:x0,oz:z0,W:w,H:h,cx:x0+w/2,cz:z0+h/2,w,h})}
+  // l'éditeur et le raid reconstruiront leur salle eux-mêmes
+  R.cutList=[];R.torches=[];R.torch.forEach(l=>l.intensity=0);R.special.intensity=0;R.heroL.intensity=0;if(R.marker)R.marker.visible=false;if(R.edCur)R.edCur.g.visible=false;R.dust=null;R.fpsDeco=null;
+  G.portrait=portBak;
+  let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const r of CVW.rooms){x0=Math.min(x0,r.ox);x1=Math.max(x1,r.ox+r.W);z0=Math.min(z0,r.oz);z1=Math.max(z1,r.oz+r.H)}CVW.box={x0,x1,z0,z1};
+  R.hemi.intensity=.8;R.sun.intensity=.62;R.camP.far=2400;R.camP.fov=38;R.camP.near=.5;R.camP.updateProjectionMatrix();R.camera=R.camP;
+  if(R.scene.fog){R.scene.fog.near=400;R.scene.fog.far=1600}
+  // fantôme de placement
+  const gh=new THREE.Group(),gm=new THREE.MeshBasicMaterial({color:0x5aff6a,transparent:true,opacity:.35,depthWrite:false});const disk=new THREE.Mesh(GEO.disk,gm);disk.rotation.x=-Math.PI/2;disk.position.y=.08;disk.scale.setScalar(2.2);gh.add(disk);
+  const rg=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({color:0xb8ffb8,transparent:true,opacity:.9,depthWrite:false}));rg.rotation.x=-Math.PI/2;rg.position.y=.1;rg.scale.setScalar(2.6);gh.add(rg);gh.visible=false;root.add(gh);CVW.ghost={g:gh,gm,rg};
+  // anneau de survol / sélection
+  const sr=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({color:0xffe27a,transparent:true,opacity:.9,depthWrite:false}));sr.rotation.x=-Math.PI/2;sr.visible=false;root.add(sr);CVW.selRing=sr;
+  cvLabels();
+}
+function cvArch(grp,x,z){const st=T(0x6a6470),dk=BASIC(0x0c0806),gd=T(0xd9a63a);
+  grp.add(wallBox(dk,x+.15,1.35,z,1.9,2.7,3.6));for(const s of[-1,1])grp.add(wallBox(st,x+.2,1.5,z+s*2.05,2,3,.6));grp.add(wallBox(st,x+.2,3.1,z,2,.5,4.7));grp.add(wallBox(gd,x+.2,3.42,z,2.1,.14,1.2))}
+function cvBridge(root,x0,z,x1,ghost){const L=x1-x0;if(L<=0)return;const g=new THREE.Group();g.position.set(x0,0,z);root.add(g);const wood=T(ghost?0x6a6052:0x8a5a2e),dark=T(0x4a3420),rope=T(0xc8b088);
+  const n=Math.max(4,Math.round(L/1.1));for(let i=0;i<n;i++){const x=(i+.5)*L/n;const p=wallBox(i%2?wood:dark,x,-.08,0,L/n*.86,.22,3.6);p.rotation.z=(i%3-1)*.02;g.add(p)}
+  for(const s of[-1,1]){for(let i=0;i<=Math.ceil(L/4);i++){const x=Math.min(L,i*4);g.add(wallBox(dark,x,.55,s*1.85,.22,1.3,.22))}g.add(wallBox(rope,L/2,1.05,s*1.85,L,.08,.08))}
+  // rochers sous le pont
+  const rk=new THREE.Mesh(new THREE.CylinderGeometry(1,.15,1,6,1),T(0x5e4634,{flatShading:true}));rk.position.set(L/2,-2.6,0);rk.scale.set(L*.18,4,1.6);g.add(rk)}
+function cvGhost(root,x0,z0,w,h){const g=new THREE.Group();g.position.set(x0,0,z0);root.add(g);
+  const grass=wallBox(T(0x3a4a40,{transparent:true,opacity:.75}),w/2,-.24,h/2,w,.3,h);g.add(grass);
+  const rock=new THREE.Mesh(new THREE.CylinderGeometry(1,.18,1,5,1),T(0x6a5a4a,{flatShading:true,transparent:true,opacity:.75}));rock.rotation.y=Math.PI/4;rock.scale.set(w/2/.7,8,h/2/.7);rock.position.set(w/2,-4.4,h/2);g.add(rock);
+  const st=T(0x8a8494,{transparent:true,opacity:.55});for(const [x,z] of[[2,2],[w-2,2],[2,h-2],[w-2,h-2]]){const t=new THREE.Mesh(GEO.cyl,st);t.position.set(x,1,z);t.scale.set(1.1,2,1.1);g.add(t)}
+  g.add(wallBox(st,w/2,.5,1,w-4,1,.8));g.add(wallBox(st,1,.5,h/2,.8,1,h-4));
+  const sign=new THREE.Group();sign.position.set(w/2,0,h/2);g.add(sign);sign.add(wallBox(T(0x6a4422),0,1.2,0,.3,2.4,.3));sign.add(wallBox(T(0xb07a3e),0,2.4,0,2.6,1.2,.2))}
+
+/* étiquettes HTML au-dessus des salles et des mines */
+function cvLabels(){const ui=$('#cvui');let l=$('#cvLbl');if(!l){l=document.createElement('div');l.id='cvLbl';ui.prepend(l)}l.innerHTML='';CVW.lbl=[];
+  const n=roomCount();
+  for(const r of CVW.rooms){const d=document.createElement('div');d.className='cvl room'+(r.lock?' lock':'');d.textContent=r.lock?`🔒 Salle ${r.i+1} · château niv. ${r.lv}`:(r.i===n-1?`👑 Salle ${r.i+1} · trésor`:`Salle ${r.i+1}`);l.appendChild(d);CVW.lbl.push({el:d,x:r.cx,y:r.lock?4.5:6.2,z:r.oz+(r.lock?r.H/2:1.2)})}
+  for(const m of CVW.mines){const d=document.createElement('div');d.className='cvl mine';l.appendChild(d);CVW.lbl.push({el:d,x:m.wx,y:6,z:m.wz,mine:m})}}
+function cvLblTick(){const now=NOW(),cw=view.cw,ch=view.ch;initVec();
+  for(const L of CVW.lbl){_v.set(L.x,L.y,L.z).project(R.camP);const x=(_v.x+1)/2*cw,y=(1-_v.y)/2*ch,vis=_v.z<1&&x>-80&&x<cw+80&&y>-40&&y<ch+60;L.el.style.display=vis?'':'none';if(!vis)continue;L.el.style.left=x+'px';L.el.style.top=y+'px';
+    if(L.mine){const m=myMines().find(q=>q.id===L.mine.id);if(!m){L.el.style.display='none';continue}const st=mineStock(m,now),cap=MINE_L[m.l].cap,full=st>=cap,t=full?'💰 PLEIN · '+fmt(st):'💰 '+fmt(st);if(L.el._t!==t){L.el._t=t;L.el.textContent=t;L.el.className='cvl mine'+(full?' full':st<1?' empty':'')}}}}
+
+function cvLoop(now){if(!CVW.on)return;if(AFK){CVW.raf=0;return}const dt=Math.min(.05,(now-CVW.last)/1000||0);CVW.last=now;cvTick(dt);cvRender();if(Math.floor(now/500)!==Math.floor((now-dt*1000)/500))cvPanelTick();CVW.raf=requestAnimationFrame(cvLoop)}
+function cvTick(dt){const t=CVW.t,c=CVW.c;let mx=0,mz=0;for(const k of CVW.keys){const a=actOf(k);if(a==='up')mz-=1;if(a==='down')mz+=1;if(a==='left')mx-=1;if(a==='right')mx+=1}
+  if(mx||mz){const s=Math.sin(c.th),co=Math.cos(c.th),sp=c.d*1.1*dt;t.x+=(mx*co+mz*s)*sp;t.z+=(-mx*s+mz*co)*sp}
+  const b=CVW.box;if(b){t.x=clamp(t.x,b.x0-10,b.x1+10);t.z=clamp(t.z,b.z0-10,b.z1+10)}t.d=clamp(t.d,18,Math.max(200,(b?b.x1-b.x0:200)*1.6));
+  const k=Math.min(1,dt*8);c.x+=(t.x-c.x)*k;c.z+=(t.z-c.z)*k;c.d+=(t.d-c.d)*k;c.th+=(t.th-c.th)*Math.min(1,dt*7);
+  if(CVW.selRing){const m=CVW.hover&&CVW.hover.mine;CVW.selRing.visible=!!m;if(m){CVW.selRing.position.set(m.wx,.12,m.wz);CVW.selRing.scale.setScalar(2.9+.25*Math.sin(performance.now()/160))}}
+  for(const m of CVW.mines){const mm=myMines().find(q=>q.id===m.id);const full=mm&&mineStock(mm)>=MINE_L[mm.l].cap;m.g.position.y=full?Math.abs(Math.sin(performance.now()/220))*.25:0}}
+function cvCamSet(){const c=CVW.c,el=CVW.el,cam=R.camP;cam.position.set(c.x+Math.sin(c.th)*Math.cos(el)*c.d,Math.sin(el)*c.d,c.z+Math.cos(c.th)*Math.cos(el)*c.d);cam.lookAt(c.x,0,c.z)}
+function cvRender(){cvCamSet();const c=CVW.c,far=c.d>150;if(CVW.far!==far){CVW.far=far;for(const g of CVW.small||[])g.visible=!far;R.sun.castShadow=!far}const sun=R.sun,ext=clamp(c.d*.85,30,110);sun.position.set(c.x-24,60,c.z+32);sun.target.position.set(c.x,0,c.z);sun.target.updateMatrixWorld();
+  const sc=sun.shadow.camera;if(sc.right!==ext){sc.left=-ext;sc.right=ext;sc.top=ext;sc.bottom=-ext;sc.far=200;sc.updateProjectionMatrix()}
+  R.renderer.render(R.scene,R.camP);cvLblTick()}
+
+/* --- souris, doigts, clavier --- */
+function cvRay(e){initVec();const r=cv.getBoundingClientRect();_nd.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);cvCamSet();R.camP.updateMatrixWorld();_ray.setFromCamera(_nd,R.camP);return _ray}
+function cvGround(e){const ray=cvRay(e);_pl.constant=0;if(!ray.ray.intersectPlane(_pl,_hp))return null;return {x:_hp.x,z:_hp.z}}
+function cvRoomAt(p){if(!p)return null;return CVW.rooms.find(r=>p.x>=r.ox&&p.x<=r.ox+r.W&&p.z>=r.oz&&p.z<=r.oz+r.H)||null}
+function cvMineAt(e){const ray=cvRay(e),hits=ray.intersectObjects(CVW.mines.map(m=>m.hit),false);if(!hits.length)return null;const id=hits[0].object.userData.mid;return CVW.mines.find(m=>m.id===id)||null}
+function cvPlaceOk(r,p,id){if(!r||r.lock)return {ok:false,why:'Choisis une salle débloquée.'};const x=(p.x-r.ox)/U,y=(p.z-r.oz)/U,B=r.B,pad=46;
+  if(x<B.l+pad||x>B.r-pad||y<B.t+pad||y>B.b-pad)return {ok:false,why:'Trop près des murs.'};
+  if(r.walls.some(w=>inRect(x,y,w,pad)))return {ok:false,why:'Trop près des murs.'};
+  if(r.pillars.some(q=>Math.hypot(x-q.x,y-q.y)<q.r+pad))return {ok:false,why:'Trop près d\'un pilier.'};
+  if(Math.hypot(x-r.start.x,y-r.start.y)<150||Math.hypot(x-r.door.x,y-r.door.y)<150)return {ok:false,why:'Laisse l\'entrée et la porte libres.'};
+  if(r.pos.some(q=>Math.hypot(x-q.x,y-q.y)<44))return {ok:false,why:'Un monstre ou un piège est déjà là.'};
+  const B2=r.B;if(myMines().some(m=>m.id!==id&&m.r===r.i&&Math.hypot(x-(B2.l+m.u*(B2.r-B2.l)),y-(B2.t+m.v*(B2.b-B2.t)))<110))return {ok:false,why:'Trop près d\'une autre mine.'};
+  return {ok:true,u:(x-B.l)/(B.r-B.l),v:(y-B.t)/(B.b-B.t)}}
+function cvBind(ui){
+  ui.addEventListener('pointerdown',e=>{if(e.target.closest('.cvp'))return;ui.setPointerCapture&&ui.setPointerCapture(e.pointerId);CVW.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
+    if(CVW.ptrs.size===2){const [a,b]=[...CVW.ptrs.values()];CVW.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),d0:CVW.t.d};CVW.drag=null;return}
+    const g=cvGround(e);CVW.drag={g,moved:false,x0:e.clientX,y0:e.clientY}});
+  ui.addEventListener('pointermove',e=>{if(e.target.closest('.cvp')&&!CVW.ptrs.size){ui.classList.remove('over');return}const p=CVW.ptrs.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY}
+    if(CVW.pinch&&CVW.ptrs.size===2){const [a,b]=[...CVW.ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);CVW.t.d=CVW.c.d=clamp(CVW.pinch.d0*CVW.pinch.d/Math.max(20,d),18,900);return}
+    const dr=CVW.drag;if(dr&&p){if(!dr.moved&&Math.hypot(e.clientX-dr.x0,e.clientY-dr.y0)>6){dr.moved=true;ui.classList.add('grab')}
+      if(dr.moved&&dr.g){const g=cvGround(e);if(g){CVW.c.x+=dr.g.x-g.x;CVW.c.z+=dr.g.z-g.z;CVW.t.x=CVW.c.x;CVW.t.z=CVW.c.z}}return}
+    cvHover(e)});
+  const up=e=>{const dr=CVW.drag;CVW.ptrs.delete(e.pointerId);if(CVW.ptrs.size<2)CVW.pinch=null;if(!dr)return;CVW.drag=null;ui.classList.remove('grab');if(!dr.moved&&e.type==='pointerup')cvClick(e)};
+  ui.addEventListener('pointerup',up);ui.addEventListener('pointercancel',up);
+  ui.addEventListener('wheel',e=>{if(e.target.closest('.cvp'))return;e.preventDefault();CVW.t.d=clamp(CVW.t.d*Math.pow(1.0015,e.deltaY),18,900)},{passive:false});
+  addEventListener('keydown',e=>{if(!CVW.on||e.target.closest&&e.target.closest('input,select,textarea'))return;const a=actOf(e.code);
+    if(e.code==='Escape'){if(CVW.place){CVW.place=null;cvUI();return}cvClose();return}
+    if(a==='rotL'||a==='rotR'){CVW.t.th+=(a==='rotL'?-1:1)*Math.PI/4;e.preventDefault();return}
+    if(['up','down','left','right'].includes(a)){CVW.keys.add(e.code);e.preventDefault()}});
+  addEventListener('keyup',e=>CVW.keys.delete(e.code));addEventListener('blur',()=>CVW.keys.clear());
+  window.addEventListener('resize',()=>{if(CVW.on)resize()});
+}
+function cvHover(e){if(!CVW.root)return;const ui=$('#cvui');
+  if(CVW.place){const g=cvGround(e),r=cvRoomAt(g),gh=CVW.ghost;if(!g){gh.g.visible=false;return}const ok=cvPlaceOk(r,g,CVW.place);gh.g.visible=true;gh.g.position.set(g.x,0,g.z);gh.gm.color.setHex(ok.ok?0x5aff6a:0xff4a3a);gh.rg.material.color.setHex(ok.ok?0xb8ffb8:0xffb0a0);CVW.placeWhy=ok.ok?'':ok.why;const h=$('#cvHint');if(h)h.textContent=ok.ok?'Clique pour poser la mine ici · Échap pour annuler':'⛔ '+ok.why;return}
+  const m=cvMineAt(e);CVW.hover=m?{mine:m}:null;const mm=m&&myMines().find(q=>q.id===m.id);ui.classList.toggle('over',!!(mm&&mineStock(mm)>=1))}
+function cvClick(e){
+  if(CVW.place){const g=cvGround(e),r=cvRoomAt(g),ok=cvPlaceOk(r,g,CVW.place);if(!ok.ok){toast(ok.why||'Emplacement impossible');return}
+    const m=myMines().find(q=>q.id===CVW.place);if(!m)return;const wasOff=m.r<0;mineFreeze(m);m.r=r.i;m.u=+ok.u.toFixed(3);m.v=+ok.v.toFixed(3);if(wasOff){m.t=NOW()}save();sfx.chest&&sfx.chest();
+    CVW.place=null;CVW.keepCam=true;const cam=Object.assign({},CVW.c);cvBuild();Object.assign(CVW.c,cam);Object.assign(CVW.t,cam);cvUI();toast(wasOff?'⛏ Mine construite : elle produit de l\'or dès maintenant !':'⛏ Mine déplacée');return}
+  const m=cvMineAt(e);if(m){cvCollect(m,e);return}
+  const g=cvGround(e),r=cvRoomAt(g);CVW.sel=r?r.i:null;cvUI()}
+function cvCollect(m,e){const mm=myMines().find(q=>q.id===m.id);if(!mm)return;const g=mineCollect(mm);if(!g){toast('Cette mine est vide : reviens plus tard.');return}
+  const ui=$('#cvui'),r=ui.getBoundingClientRect(),x=(e?e.clientX:r.width/2),y=(e?e.clientY:r.height/2);
+  const t=document.createElement('div');t.className='cvgain';t.textContent='+'+fmt(g)+' or';t.style.left=(x-r.left)+'px';t.style.top=(y-r.top)+'px';ui.appendChild(t);setTimeout(()=>t.remove(),1400);
+  const tgt=($('#cvGold')||document.body).getBoundingClientRect();for(let i=0;i<Math.min(8,2+Math.ceil(g/150));i++){const c=document.createElement('div');c.className='cvfly';c.textContent='🪙';c.style.left=x+'px';c.style.top=y+'px';document.body.appendChild(c);
+    setTimeout(()=>{c.style.transform=`translate(${tgt.left+tgt.width/2-x+rand(-8,8)}px,${tgt.top+tgt.height/2-y}px) scale(.6)`;c.style.opacity='.2'},30+i*70);setTimeout(()=>c.remove(),900+i*70)}
+  spark3D(m.wx,m.wz);cvUI()}
+function spark3D(x,z){if(!CVW.root)return;const g=new THREE.Group();g.position.set(x,1.5,z);CVW.root.add(g);const ps=[];for(let i=0;i<14;i++){const p=new THREE.Mesh(GEO.coin||GEO.sph,BASIC(0xffd34a));p.scale.setScalar(1.6);const a=Math.random()*6.28,s=4+Math.random()*5;p.userData.v=[Math.cos(a)*s,8+Math.random()*6,Math.sin(a)*s];g.add(p);ps.push(p)}
+  let t=0;const tick=()=>{t+=.016;for(const p of ps){const v=p.userData.v;v[1]-=24*.016;p.position.x+=v[0]*.016;p.position.y+=v[1]*.016;p.position.z+=v[2]*.016;p.rotation.x+=.3;p.rotation.y+=.2}if(t<.9&&CVW.root)requestAnimationFrame(tick);else if(g.parent){g.parent.remove(g)}};tick()}
+function cvAll(){const bx=CVW.box;if(!bx)return;const asp=view.cw/Math.max(1,view.ch),hf=Math.tan(R.camP.fov*Math.PI/360),w=(bx.x1-bx.x0)+20,h=(bx.z1-bx.z0)+30;CVW.t.th=0;cvFocus((bx.x0+bx.x1)/2,(bx.z0+bx.z1)/2,Math.max(w/2/(hf*asp),h/2/hf*1.3)*1.05)}
+function cvFocus(x,z,d){CVW.t.x=x;CVW.t.z=z;if(d)CVW.t.d=d}
+
+/* --- panneau latéral : mines ou salle sélectionnée --- */
+function mineCards(inMap){const ms=myMines(),slots=mineSlots(),maxL=mineMaxLv(),now=NOW();let h='';
+  ms.forEach((m,i)=>{const d=MINE_L[m.l],st=mineStock(m,now),pct=Math.min(100,st/d.cap*100),full=st>=d.cap,nx=MINE_L[m.l+1],canUp=m.l<maxL&&nx,upLock=m.l<4&&m.l>=maxL;
+    const fi=mineFullIn(m);
+    h+=`<div class="mcard ${CVW.place===m.id?'on':''}"><div class="mh"><b>⛏ Mine ${i+1} · niv. ${m.l}</b><small>${m.r<0?'pas encore posée':'salle '+(m.r+1)}</small></div>
+      <div class="mbar ${full?'full':''}"><i style="width:${pct}%"></i></div>
+      <small>${m.r<0?'Pose-la dans une salle pour qu\'elle produise.':`💰 <b data-mst="${m.id}">${fmt(st)}</b> / ${fmt(d.cap)} or · ${d.r} or/h${full?' · <b style="color:#ffb02a">pleine !</b>':` · pleine dans <span data-mfi="${m.id}">${mineDur(fi)}</span>`}`}</small>
+      <div class="bar">${inMap?(m.r<0?`<button class="btn primary" data-act="cvPlace" data-id="${m.id}">📍 Poser</button>`:`<button class="btn" data-act="cvPlace" data-id="${m.id}">↔ Déplacer</button><button class="btn" data-act="cvGo" data-id="${m.id}">🎯 Voir</button>`):''}
+      ${canUp?`<button class="btn" data-act="mineUp" data-id="${m.id}" ${S.hero.gold<nx.up?'disabled':''}>⬆ Niv. ${m.l+1} (${fmt(nx.up)} or)</button>`:upLock?`<span class="chip no">🔒 niv. ${m.l+1} : château niv. ${MINE_LV_AT[m.l+1]}</span>`:'<span class="chip ok">Niveau max</span>'}</div></div>`});
+  if(ms.length<slots){const c=MINE_BUILD[ms.length]||0;h+=`<div class="mcard"><div class="mh"><b>⛏ Nouvelle mine</b><small>${ms.length+1}/${slots}</small></div><small>Produit ${MINE_L[1].r} or/h au niveau 1.</small><div class="bar"><button class="btn primary" data-act="mineBuild" ${S.hero.gold<c?'disabled':''}>🔨 Construire${c?` (${fmt(c)} or)`:' (gratuit)'}</button></div></div>`}
+  else if(ms.length<4){const at=MINE_SLOT_AT[ms.length];h+=`<div class="mcard lock"><div class="mh"><b>🔒 Mine ${ms.length+1}</b><small>château niv. ${at}</small></div><small>Agrandis ton château pour construire une mine de plus.</small></div>`}
+  return h}
+function mineTotal(){let t=0;for(const m of myMines())t+=mineStock(m);return t}
+function cvUI(){const ui=$('#cvui');if(!ui)return;const n=roomCount(),maxed=S.my.lvl>=10,tot=mineTotal(),r=CVW.sel!=null?CVW.rooms.find(x=>x.i===CVW.sel):null;
+  let panel;
+  if(r&&r.lock){panel=`<div class="cvp cv-panel"><h3>🔒 Salle ${r.i+1}</h3><p class="sub">Elle se débloque au <b>niveau ${r.lv}</b> du château.</p><div class="bar"><button class="btn primary" data-act="cvUp" ${maxed||S.hero.gold<upCost()?'disabled':''}>Agrandir (${fmt(upCost())} or)</button><button class="btn ghost" data-act="cvSel">✕</button></div></div>`}
+  else if(r){const rm=S.my.rooms[r.i],used=monUsed(r.i),cap=capacity(),last=r.i===n-1;
+    panel=`<div class="cvp cv-panel"><h3>${last?'👑 ':''}Salle ${r.i+1}${last?' · trésor':''}</h3>
+      <label class="sub" style="display:block">Agencement <select class="cvlay" data-room="${r.i}" style="font:inherit;font-weight:800;padding:3px 6px;border-radius:8px;border:2px solid var(--line);background:#0b1428;color:var(--fg)">${LAY_KEYS.map(k=>`<option value="${k}" ${rm.lay===k?'selected':''}>${LAYOUTS[k].n}</option>`).join('')}</select></label>
+      <p class="sub">Monstres <b>${fmtPl(used)}/${cap}</b> places${last?'':` · pièges <b>${trapUsed(r.i)}/${capT()}</b>`}${last?` · boss : <b>${esc(BOSSES[S.my.boss||'boss'].n)}</b>`:''} · mines : <b>${myMines().filter(m=>m.r===r.i).length}</b></p>
+      <div class="bar"><button class="btn primary" data-act="cvEdit" data-room="${r.i}">🏗 Construire cette salle</button><button class="btn ghost" data-act="cvSel">✕</button></div></div>`}
+  else panel=`<div class="cvp cv-panel ${CVW.min?'min':''}"><h3 style="display:flex;justify-content:space-between;gap:8px">⛏ Mines d'or · ${myMines().length}/${mineSlots()}<button class="btn ghost" data-act="cvMin" style="padding:0 10px;font-size:14px" title="Réduire / agrandir">${CVW.min?'▴':'▾'}</button></h3><div class="cvbody"><p class="sub">Pose tes mines dans les salles : elles produisent de l'or en continu. Clique sur une mine avec la main pour <b>récolter</b>. Attention : les pillards peuvent la casser pour voler une partie de son or !</p>
+      ${tot>=1?`<button class="btn primary" data-act="cvAll" style="width:100%;margin-bottom:4px">🖐 Tout récolter (${fmt(tot)} or)</button>`:''}${mineCards(true)}</div></div>`;
+  ui.querySelectorAll('.cvp,.cv-top,.cv-tools,.cv-hint').forEach(x=>x.remove());
+  ui.insertAdjacentHTML('beforeend',`<div class="cv-top"><button class="btn cvp" data-act="cvClose">← Retour</button><div class="cv-title"><b>${esc(S.my.name||'Ton château')}</b><small>Niveau ${S.my.lvl} · ${n} salle${n>1?'s':''} · vue du château</small></div>
+    <span class="cv-chip cvp" id="cvGold">💰 ${fmt(S.hero.gold)}</span>${maxed?'':`<button class="btn cvp" data-act="cvUp" ${S.hero.gold<upCost()?'disabled':''} title="Agrandir le château">🏰 <span class="cv-up-t">Niv. ${S.my.lvl+1} </span>(${fmt(upCost())} or)</button>`}</div>
+    <div class="cv-tools cvp"><button class="btn" data-act="cvRot" data-d="-1" title="Tourner (A)">⟲</button><button class="btn" data-act="cvRot" data-d="1" title="Tourner (E)">⟳</button><button class="btn" data-act="cvZoom" data-d="-1" title="Zoomer">＋</button><button class="btn" data-act="cvZoom" data-d="1" title="Dézoomer">－</button><button class="btn" data-act="cvAllView" title="Tout le château">🗺</button></div>
+    ${panel}<div class="cv-hint" id="cvHint">${CVW.place?'Clique dans une salle pour poser la mine · Échap pour annuler':'Glisse pour te déplacer · molette ou pincement pour zoomer · A / E pour tourner · clique une salle pour la gérer'}</div>`);
+  ui.classList.toggle('placing',!!CVW.place);if(CVW.ghost&&!CVW.place)CVW.ghost.g.visible=false}
+function cvPanelTick(){if(!CVW.on)return;const now=NOW();for(const m of myMines()){const a=document.querySelector(`[data-mst="${m.id}"]`);if(a)a.textContent=fmt(mineStock(m,now));const b=document.querySelector(`[data-mfi="${m.id}"]`);if(b)b.textContent=mineDur(mineFullIn(m))}
+  const g=$('#cvGold');if(g)g.textContent='💰 '+fmt(S.hero.gold)}
+function cvAct(a,b){
+  if(a==='cvClose'){cvClose();return true}
+  if(a==='cvRot'){CVW.t.th+=(+b.dataset.d)*Math.PI/4;return true}
+  if(a==='cvZoom'){CVW.t.d=clamp(CVW.t.d*(+b.dataset.d>0?1.35:1/1.35),18,900);return true}
+  if(a==='cvAllView'){cvAll();return true}
+  if(a==='cvSel'){CVW.sel=null;cvUI();return true}
+  if(a==='cvMin'){CVW.min=!CVW.min;cvUI();return true}
+  if(a==='cvPlace'){const id=+b.dataset.id;CVW.place=CVW.place===id?null:id;CVW.sel=null;cvUI();return true}
+  if(a==='cvGo'){const m=CVW.mines.find(q=>q.id===+b.dataset.id);if(m)cvFocus(m.wx,m.wz,36);return true}
+  if(a==='cvAll'){let t=0;for(const m of myMines())t+=mineCollect(m,true);if(t){sfx.loot();const r=$('#cvui').getBoundingClientRect();cvCollectFx(t,r.left+180,r.bottom-120)}cvUI();return true}
+  if(a==='cvEdit'){const i=+b.dataset.room;CVW.fromEd=true;cvClose(false);openEditor(i);return true}
+  if(a==='cvUp'){const c=upCost();if(S.hero.gold<c||S.my.lvl>=10)return true;S.hero.gold-=c;S.my.lvl++;S.my.validated=false;save();renderTop();sfx.level();toast(`Château niveau ${S.my.lvl} !${mineSlots(S.my.lvl)>mineSlots(S.my.lvl-1)?' Nouvelle mine disponible !':''}${mineMaxLv(S.my.lvl)>mineMaxLv(S.my.lvl-1)?' Les mines peuvent monter au niveau '+mineMaxLv():''}`);
+    const cam=Object.assign({},CVW.c);CVW.keepCam=true;cvBuild();Object.assign(CVW.c,cam);Object.assign(CVW.t,cam);CVW.sel=null;cvUI();return true}
+  if(a==='mineBuild'){const m=mineBuild();if(m){toast('⛏ Nouvelle mine ! '+(CVW.on?'Clique dans une salle pour la poser.':'Pose-la depuis la vue du château.'));if(CVW.on){CVW.place=m.id;cvUI()}else renderHub()}return true}
+  if(a==='mineUp'){const m=myMines().find(q=>q.id===+b.dataset.id);if(mineUp(m)){if(CVW.on){const cam=Object.assign({},CVW.c);CVW.keepCam=true;cvBuild();Object.assign(CVW.c,cam);Object.assign(CVW.t,cam);cvUI()}else renderHub()}return true}
+  if(a==='cvOpen'){cvOpen();return true}
+  return false}
+function cvCollectFx(g,x,y){const tgt=($('#cvGold')||document.body).getBoundingClientRect();for(let i=0;i<8;i++){const c=document.createElement('div');c.className='cvfly';c.textContent='🪙';c.style.left=x+'px';c.style.top=y+'px';document.body.appendChild(c);
+  setTimeout(()=>{c.style.transform=`translate(${tgt.left-x+rand(-8,8)}px,${tgt.top-y}px) scale(.6)`;c.style.opacity='.2'},30+i*60);setTimeout(()=>c.remove(),900+i*60)}toast(`🖐 Mines récoltées : +${fmt(g)} or`)}
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('.cvlay');if(!s)return;const i=+s.dataset.room,r=S.my.rooms[i];if(!r)return;r.lay=s.value;r.pos=(r.pos||[]).filter(q=>q.b);try{edAutoPlace(i)}catch(_){}
+  for(const m of myMines())if(m.r===i){m.u=clamp(m.u,.15,.85);m.v=clamp(m.v,.15,.85)}
+  S.my.validated=false;save();const cam=Object.assign({},CVW.c);CVW.keepCam=true;cvBuild();Object.assign(CVW.c,cam);Object.assign(CVW.t,cam);cvUI();toast('Agencement changé : pense à re-tester ton château.')});
+
+/* --- sous-onglet « Vue & mines » de Mon château --- */
+function viewMines(){const tot=mineTotal(),ms=myMines(),off=ms.filter(m=>m.r<0).length;
+  return `<section class="card" style="margin-top:10px"><div class="bar" style="justify-content:space-between;align-items:center;gap:12px"><div><h3 style="margin:0">🗺 Vue du château</h3><p class="sub" style="margin:4px 0 0">Toutes tes salles reliées sur une seule carte : promène-toi en caméra libre, gère chaque salle et récolte tes mines d'or avec la main.</p></div>
+    <button class="btn primary big" data-act="cvOpen">🗺 Ouvrir la vue du château</button></div></section>
+  <section class="card" style="margin-top:10px"><h3 style="margin:0 0 4px">⛏ Mines d'or · ${ms.length}/${mineSlots()}</h3>
+    <p class="sub" style="margin:0 0 6px">Chaque mine posée produit de l'or en continu jusqu'à son stock maximum. Récolte-la dans la vue du château. Les pillards qui la cassent emportent <b>${Math.round(MINE_STEAL*100)} %</b> de son stock.${off?` <b style="color:#ffd34a">${off} mine${off>1?'s':''} à poser !</b>`:''}${tot>=1?` · En attente : <b>${fmt(tot)} or</b>`:''}</p>
+    <div class="mgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${mineCards(false)}</div>
+    <details style="margin-top:8px"><summary class="sub" style="cursor:pointer">Progression des mines</summary><table class="sub" style="width:100%;border-collapse:collapse;margin-top:6px"><tr><th style="text-align:left">Château</th><th style="text-align:left">Débloque</th></tr>
+      ${[[1,'1re mine (niv. 1 max)'],[4,'mines niveau 2'],[5,'2e mine'],[6,'mines niveau 3'],[7,'3e mine'],[8,'4e mine'],[10,'mines niveau 4']].map(([l,t])=>`<tr style="${S.my.lvl>=l?'color:#9cf08c':''}"><td>niv. ${l}</td><td>${t}</td></tr>`).join('')}</table>
+      <p class="sub" style="margin:6px 0 0">${[1,2,3,4].map(l=>`Niv. ${l} : ${MINE_L[l].r} or/h, stock ${fmt(MINE_L[l].cap)}${l>1?` (amélioration ${fmt(MINE_L[l].up)} or)`:''}`).join(' · ')}</p></details></section>`}
+
 /* ================= Démarrage ================= */
 /* --- application Android : retour, mise en pause --- */
 window.__androidPause=()=>{try{save()}catch(e){}};
-window.__androidBack=()=>{try{if(G.active&&G.edit){closeEditor();return 1}if(G.active&&!G.over){toast('Pour quitter le raid, utilise le drapeau ⚑');return 1}
+window.__androidBack=()=>{try{if(CVW.on){if(CVW.place){CVW.place=null;cvUI();return 1}cvClose();return 1}if(G.active&&G.edit){closeEditor();return 1}if(G.active&&!G.over){toast('Pour quitter le raid, utilise le drapeau ⚑');return 1}
   if(!$('#modal').hidden){if(GATE.on)return 1;if(!S.hero.created)return 1;$('#modal').hidden=true;$('#raid').hidden=true;renderHub();return 1}if(tab!=='pillage'){tab='pillage';renderHub();return 1}}catch(e){}return 0};
 function migrateMage(h,cls){if(!h||cls!=='mage'||h.mageOwn)return;const own={};if(S.mageEl==='glace')own.glace=true;if(S.mageNova&&S.mageNova!=='explo')own[S.mageNova]=true;h.mageOwn=own}
 function migrateSubs(h){if(!h)return;const own=Object.assign({},h.subOwn);if(h.sub)own[h.sub]=true;for(const k in (h.subData||{}))if(k)own[k]=true;h.subOwn=own}

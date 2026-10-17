@@ -1,5 +1,14 @@
 # 📜 Coffres & Créneaux : notes de mise à jour
 
+# Version 114 : Mines d'or et vue du château
+- 🗺 **Vue du château** : nouveau sous-onglet **Vue & mines** dans « Mon château ». Toutes tes salles sont **reliées sur une seule carte** (ponts entre les salles, prochaine salle à débloquer en île fantôme).
+- 🎥 **Caméra libre** : glisse pour te déplacer, molette ou pincement pour zoomer, A / E (ou ⟲ ⟳) pour tourner, 🗺 pour voir tout le château.
+- 🏗 Clique sur une salle pour changer son agencement ou ouvrir le **mode construction** : en le quittant, tu reviens sur la carte. Tu peux aussi agrandir le château depuis la carte.
+- ⛏ **Mines d'or** : construis des mines et pose-les dans tes salles. Elles produisent de l'or en continu jusqu'à leur stock maximum. **Récolte-les avec la main 🖐** en cliquant dessus (ou « Tout récolter »).
+- 📈 **Progression** : 1re mine dès l'ouverture de « Mon château », mines niv. 2 au château niv. 4, 2e mine au niv. 5, mines niv. 3 au niv. 6, 3e mine au niv. 7, 4e mine au niv. 8, mines niv. 4 au niv. 10.
+- 💰 Niv. 1 : 40 or/h (stock 400) · niv. 2 : 90 or/h (1 080) · niv. 3 : 160 or/h (2 240) · niv. 4 : 260 or/h (4 160).
+- ⚔️ **Pillage des mines** : les châteaux adverses ont aussi des mines. Frappe-les pendant un raid : chaque coup fait jaillir de l'or (objectif « ⛏ Mines »). En ligne, un pillard qui casse ta mine emporte **50 % de son stock** : pense à récolter souvent !
+
 # Version 113 : Petites corrections
 - 💎 **Butin** : les **cœurs légendaires** et les **runes uniques** lâchés par les boss suivent maintenant la même règle que les fragments runiques : ils tombent à partir du **niveau de joueur 15**.
 - 🔧 **Matchmaking** : l'onglet ne plante plus quand la saison n'est pas encore chargée (juste après le lancement, en jeu local) ; il affiche « Saison en cours de chargement… » puis se met à jour tout seul.
