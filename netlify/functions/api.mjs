@@ -18,12 +18,39 @@ async function sendMail(env, to, subject, html) {
     body: JSON.stringify({ sender: { name: env.MAIL_NAME || 'Coffres & Créneaux', email: env.MAIL_FROM }, to: [{ email: to }], subject, htmlContent: html }) });
   if (!r.ok) throw new Error("Le mail n'a pas pu être envoyé (" + r.status + ')');
 }
+const GOOGLE_CLIENT_ID_DEFAULT = '537392142556-oop0091rr535fefi5cst6khklmpcd9ql.apps.googleusercontent.com';
+// vérifie le jeton « Se connecter avec Google » auprès de Google (signature, destinataire, expiration)
+async function googleVerify(env, credential) {
+  const tok = String(credential || '');
+  if (!/^[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+$/.test(tok)) throw new Error('Jeton Google invalide');
+  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(tok));
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.sub) throw new Error('Connexion Google refusée');
+  if (d.aud !== (env.GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_DEFAULT)) throw new Error('Jeton Google destiné à un autre site');
+  if (!['accounts.google.com', 'https://accounts.google.com'].includes(d.iss)) throw new Error('Émetteur Google inconnu');
+  if (+d.exp * 1000 < Date.now()) throw new Error('Connexion Google expirée, réessaie');
+  return { sub: String(d.sub), email: d.email_verified === true || d.email_verified === 'true' ? String(d.email || '').toLowerCase() : '' };
+}
 async function findPlayer(store, login) {
   login = String(login || '').trim();
   if (login.includes('@')) { const e = await store.get('email/' + (await sha(login.toLowerCase())), { type: 'json' }); return e ? store.get('player/' + e.id, { type: 'json' }) : null; }
   const n = await store.get('name/' + login.toLowerCase(), { type: 'json' }); return n ? store.get('player/' + n.id, { type: 'json' }) : null;
 }
 const INBOX_MAX = 40, HIST_MAX = 30;
+// mines d'or (v114) : production par heure et stock maximum selon le niveau, part volée par un pillard
+const MINE_L = [null, { r: 40, cap: 400 }, { r: 90, cap: 1080 }, { r: 160, cap: 2240 }, { r: 260, cap: 4160 }], MINE_STEAL = 0.5;
+function cleanMines(arr) {
+  return (Array.isArray(arr) ? arr : []).slice(0, 4).map((m) => {
+    if (!m || typeof m !== 'object') m = {};
+    const l = clamp(m.l | 0, 1, 4);
+    return { r: clamp(m.r | 0, 0, 4), u: clamp(+m.u || 0, 0, 1), v: clamp(+m.v || 0, 0, 1), l, s: clamp(Math.floor(+m.s || 0), 0, MINE_L[l].cap), t: clamp(Math.floor(+m.t || 0), 0, Date.now()) };
+  });
+}
+function mineLootMax(mines, at) {
+  let g = 0;
+  for (const m of mines || []) { const d = MINE_L[m.l] || MINE_L[1]; g += Math.floor(Math.min(d.cap, (m.s || 0) + Math.max(0, at - (m.t || at)) / 3600e3 * d.r) * MINE_STEAL); }
+  return g;
+}
 
 // ---------- index des joueurs (un seul blob, écrit avec un verrou optimiste quand c'est possible) ----------
 async function readIndex(store) {
@@ -76,6 +103,7 @@ function cleanCastle(c) {
       pos: (Array.isArray(r.pos) ? r.pos : []).slice(0, 130).map((q) => ({ k: typeof q.k === 'string' && KEY_RE.test(q.k) ? q.k : '', u: clamp(+q.u || 0, 0, 1), v: clamp(+q.v || 0, 0, 1), t: q.t ? 1 : 0, b: q.b ? 1 : 0, n: Array.isArray(q.n) ? q.n.slice(0, 2).map((x) => clamp(+x || 0, -1, 1)) : undefined, inner: q.inner ? 1 : 0 })).filter((q) => q.k),
     })),
     mlv: {}, tUp: {},
+    mines: cleanMines(c.mines),
   };
   for (const k in c.mlv || {}) if (KEY_RE.test(k)) out.mlv[k] = clamp(c.mlv[k] | 0, 1, 20);
   for (const k in c.tUp || {}) if (KEY_RE.test(k)) { const u = c.tUp[k] || {}; out.tUp[k] = { b: u.b === 'a' || u.b === 'b' ? u.b : '', l: clamp(u.l | 0, 0, 3) }; }
@@ -118,6 +146,7 @@ export async function handle(req, store, env = {}) {
     if (path === '/reset/request' && method === 'POST') {
       const p = await findPlayer(store, body.login);
       if (!p) return err('Compte introuvable', 404);
+      if (!p.pinHash) return err('Ce compte se connecte avec Google : pas de mot de passe à réinitialiser', 400);
       if (!p.email) return err("Ce compte n'a pas d'adresse mail : impossible de réinitialiser le mot de passe", 400);
       if (p.reset && Date.now() - p.reset.at < 60000) return err('Un code vient déjà d\'être envoyé : patiente une minute');
       const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
@@ -137,10 +166,34 @@ export async function handle(req, store, env = {}) {
       return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies, email: maskMail(p.email) });
     }
 
+    // ----- connexion avec Google : retrouve (ou crée) le compte lié à ce compte Google -----
+    if (path === '/google' && method === 'POST') {
+      const g = await googleVerify(env, body.credential);
+      const link = await store.get('google/' + g.sub, { type: 'json' });
+      let p = link && (await store.get('player/' + link.id, { type: 'json' }));
+      if (!p) {
+        const name = String(body.name || '').trim();
+        if (!name) return json({ need: 'name', suggest: (g.email.split('@')[0] || '').replace(/[^A-Za-z0-9_\-]/g, '').slice(0, 16) });
+        if (!NAME_RE.test(name)) return err('Pseudo : 3 à 16 lettres, chiffres, espaces, - ou _');
+        const low = name.toLowerCase();
+        if (await store.get('name/' + low, { type: 'json' })) return err('Ce pseudo est déjà pris', 409);
+        const id = rnd(8), salt = rnd(8);
+        p = { id, name, salt, email: '', pinHash: null, google: g.sub, tokenHash: '', created: Date.now(), trophies: 1000, wins: 0, losses: 0, defW: 0, defL: 0, castleAt: 0, castleMeta: null, hero: null };
+        if (g.email && !(await store.get('email/' + (await sha(g.email)), { type: 'json' }))) { p.email = g.email; await store.setJSON('email/' + (await sha(g.email)), { id }); }
+        await store.setJSON('name/' + low, { id });
+        await store.setJSON('google/' + g.sub, { id });
+        p.isNew = 1;
+      }
+      const token = rnd(24); p.tokenHash = await sha(token); const isNew = !!p.isNew; delete p.isNew;
+      await store.setJSON('player/' + p.id, p);
+      if (isNew) await updateIndex(store, (ix) => { ix.players[p.id] = pubPlayer(p); });
+      return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies, email: maskMail(p.email), google: true, created: isNew });
+    }
+
     if (path === '/login' && method === 'POST') {
       const pin = String(body.pin || '');
       const p = await findPlayer(store, body.name);
-      if (!p || p.pinHash !== (await sha(p.salt + pin))) return err('Pseudo ou mot de passe incorrect', 401);
+      if (!p || !p.pinHash || p.pinHash !== (await sha(p.salt + pin))) return err(p && !p.pinHash ? 'Ce compte se connecte avec Google' : 'Pseudo ou mot de passe incorrect', 401);
       const token = rnd(24); p.tokenHash = await sha(token);
       await store.setJSON('player/' + p.id, p);
       return json({ id: p.id, name: p.name, token: p.id + '.' + token, trophies: p.trophies, email: maskMail(p.email) });
@@ -166,9 +219,20 @@ export async function handle(req, store, env = {}) {
 
     if (path === '/me') return json({ me: pubPlayer(me), email: maskMail(me.email) });
 
+    if (path === '/google/link' && method === 'POST') {
+      const g = await googleVerify(env, body.credential);
+      const ex = await store.get('google/' + g.sub, { type: 'json' });
+      if (ex && ex.id !== me.id) return err('Ce compte Google est déjà lié à un autre compte du jeu', 409);
+      if (me.google && me.google !== g.sub) await store.delete('google/' + me.google).catch(() => {});
+      me.google = g.sub; await store.setJSON('google/' + g.sub, { id: me.id });
+      if (!me.email && g.email && !(await store.get('email/' + (await sha(g.email)), { type: 'json' }))) { me.email = g.email; await store.setJSON('email/' + (await sha(g.email)), { id: me.id }); }
+      await store.setJSON('player/' + me.id, me);
+      return json({ ok: true, email: maskMail(me.email) });
+    }
+
     if (path === '/account/email' && method === 'POST') {
       const email = String(body.email || '').trim().toLowerCase(), pin = String(body.pin || '');
-      if (me.pinHash !== (await sha(me.salt + pin))) return err('Mot de passe incorrect', 401);
+      if (me.pinHash && me.pinHash !== (await sha(me.salt + pin))) return err('Mot de passe incorrect', 401);
       if (!MAIL_RE.test(email)) return err('Adresse mail invalide');
       const eh = await sha(email), ex = await store.get('email/' + eh, { type: 'json' });
       if (ex && ex.id !== me.id) return err('Cette adresse mail est déjà utilisée par un autre compte', 409);
@@ -182,11 +246,11 @@ export async function handle(req, store, env = {}) {
       const wantTop = url.searchParams.get('top') !== '0';
       const [ib0, hist0, ix] = await Promise.all([store.get('inbox/' + me.id, { type: 'json' }), store.get('hist/' + me.id, { type: 'json' }), wantTop ? readIndex(store) : null]);
       const ib = ib0 || { events: [] }, hist = hist0 || { raids: [] };
-      let gold = 0; const fresh = [];
-      for (const e of ib.events) if (!e.claimed) { e.claimed = 1; gold += e.gold || 0; fresh.push(e); }
+      let gold = 0, mine = 0; const fresh = [];
+      for (const e of ib.events) if (!e.claimed) { e.claimed = 1; gold += e.gold || 0; mine += e.mine || 0; fresh.push(e); }
       if (fresh.length) await store.setJSON('inbox/' + me.id, ib);
       const top = ix ? Object.values(ix.data.players).sort((a, b) => b.trophies - a.trophies).slice(0, 50) : undefined;
-      const body = { me: pubPlayer(me), events: ib.events, raids: hist.raids, claimed: { gold, n: fresh.length, lost: fresh.filter((e) => e.success).length }, top, save: me.saveMeta || null, email: maskMail(me.email) };
+      const body = { me: pubPlayer(me), events: ib.events, raids: hist.raids, claimed: { gold, mine, n: fresh.length, lost: fresh.filter((e) => e.success).length }, top, save: me.saveMeta || null, email: maskMail(me.email), google: !!me.google };
       return json(body);
     }
 
@@ -254,7 +318,10 @@ export async function handle(req, store, env = {}) {
       me.trophies = Math.max(0, me.trophies + gain); def.trophies = Math.max(0, def.trophies + dGain);
       if (success) { me.wins++; def.defL++; } else { me.losses++; def.defW++; }
       const reward = success ? 0 : Math.round(40 * ((def.castleMeta || {}).lvl || 1) * (1 + (body.rooms | 0) * .1));
-      const ev = { t: Date.now(), by: me.name, byId: me.id, success, rooms: clamp(body.rooms | 0, 0, 5), kills: clamp(body.kills | 0, 0, 999), trophies: dGain, gold: reward, cls: cleanHero(body.hero)?.cls || '' };
+      // or arraché aux mines : jamais plus que ce que les mines publiées contenaient au début du raid
+      let mine = 0;
+      if ((body.mineGold | 0) > 0) { const cs = await store.get('castle/' + raid.target, { type: 'json' }); mine = clamp(body.mineGold | 0, 0, mineLootMax(cs && cs.mines, raid.t) + 4); }
+      const ev = { t: Date.now(), by: me.name, byId: me.id, success, rooms: clamp(body.rooms | 0, 0, 5), kills: clamp(body.kills | 0, 0, 999), trophies: dGain, gold: reward, mine, cls: cleanHero(body.hero)?.cls || '' };
       const ib = (await store.get('inbox/' + def.id, { type: 'json' })) || { events: [] };
       ib.events.unshift(ev); ib.events = ib.events.slice(0, INBOX_MAX);
       const hist = (await store.get('hist/' + me.id, { type: 'json' })) || { raids: [] };
@@ -287,7 +354,7 @@ export async function handle(req, store, env = {}) {
 export default async (req) => {
   const { getStore } = await import('@netlify/blobs');
   const ge = (k) => (globalThis.Netlify && Netlify.env && Netlify.env.get(k)) || process.env[k] || '';
-  const env = { ADMIN_IDS: ge('ADMIN_IDS'), BREVO_KEY: ge('BREVO_KEY'), MAIL_FROM: ge('MAIL_FROM'), MAIL_NAME: ge('MAIL_NAME') };
+  const env = { ADMIN_IDS: ge('ADMIN_IDS'), BREVO_KEY: ge('BREVO_KEY'), MAIL_FROM: ge('MAIL_FROM'), MAIL_NAME: ge('MAIL_NAME'), GOOGLE_CLIENT_ID: ge('GOOGLE_CLIENT_ID') };
   return handle(req, getStore({ name: 'coffres-creneaux', consistency: 'strong' }), env);
 };
 
